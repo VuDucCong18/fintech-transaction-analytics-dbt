@@ -1,0 +1,264 @@
+version: 2
+
+sources:
+  - name: fintech_raw
+    description: Raw fintech customer transaction data from Snowflake
+    database: fintech_analytics
+    schema: raw
+    
+    tables:
+      - name: raw_customers
+        description: >
+          Customers dimension table with profile information including KYC status,
+          signup date, segment, country and city information.
+        columns:
+          - name: customer_id
+            description: Unique customer identifier
+            data_tests:
+              - unique
+              - not_null
+          - name: customer_name
+            description: Full name of the customer
+          - name: email
+            description: Customer email address
+          - name: signed_up_date
+            description: Date when customer signed up
+          - name: country
+            description: Customer country
+          - name: city
+            description: Customer city
+          - name: kyc_status
+            description: Know Your Customer (KYC) verification status
+          - name: customer_segment
+            description: Customer segment (e.g., Premium, Standard, Basic)
+          - name: phone_number
+            description: Customer phone number
+
+      - name: raw_accounts
+        description: >
+          Customer financial account table. One customer can own multiple accounts
+          (Savings, Checking, Credit). Includes balance and credit limit.
+        columns:
+          - name: account_id
+            description: Unique account identifier (primary key)
+            data_tests:
+              - unique
+              - not_null
+          - name: customer_id
+            description: Foreign key to customer (RAW_CUSTOMERS.customer_id)
+            data_tests:
+              - not_null
+          - name: account_type
+            description: Type of account (Savings, Checking, Credit)
+            data_tests:
+              - not_null
+          - name: account_currency
+            description: Account currency code (SGD, USD, MYR, etc.)
+            data_tests:
+              - not_null
+          - name: account_status
+            description: Status of account (Active, Dormant, Closed, Suspended)
+            data_tests:
+              - not_null
+          - name: opened_date
+            description: Date when account was opened
+            data_tests:
+              - not_null
+          - name: closed_date
+            description: Date when account was closed (null if still open)
+          - name: available_balance
+            description: Current available account balance
+            data_tests:
+              - not_null
+          - name: credit_limit
+            description: Credit limit (for credit accounts)
+          - name: is_joint_account
+            description: Whether account is joint
+            data_tests:
+              - not_null
+          - name: created_at
+            description: Record creation timestamp
+
+      - name: raw_cards
+        description: >
+          Payment card table. One account can have multiple cards (physical or virtual).
+          Includes card validity, limits, and status.
+        columns:
+          - name: card_id
+            description: Unique card identifier (primary key)
+            data_tests:
+              - unique
+              - not_null
+          - name: account_id
+            description: Foreign key to associated account (RAW_ACCOUNTS.account_id)
+            data_tests:
+              - not_null
+          - name: card_type
+            description: Type of card (Debit, Credit, Prepaid)
+            data_tests:
+              - not_null
+          - name: card_network
+            description: Card network (Visa, Mastercard, etc.)
+            data_tests:
+              - not_null
+          - name: card_status
+            description: Status of card (Active, Blocked, Expired, Cancelled)
+            data_tests:
+              - not_null
+          - name: issued_date
+            descripmaster data. One row per merchant with business details,
+          category, location, and onboarding status.
+        columns:
+          - name: merchant_id
+            description: Unique merchant identifier (primary key)
+            data_tests:
+              - unique
+              - not_null
+          - name: merchant_name
+            description: Name of the merchant
+            data_tests:
+              - not_null
+          - name: merchant_category
+            description: >
+              Business category (Grocery, Travel, Crypto Exchange, SaaS,
+              E-commerce, ATM, etc.)
+            data_tests:
+              - not_null
+          - name: merchant_country
+            description: Merchant country
+            data_tests:
+              - not_null
+          - name: merchant_city
+            description: Merchant city
+            data_tests:
+              - not_null
+          - name: onboarding_date
+            description: Date merchant was onboarded
+            data_tests:
+              - not_null
+          - name: merchant_status
+            description: Status of merchant (Active, Suspended, Closed)
+            data_tests:
+              - not_null
+          - name: created_at
+            description: Record creation timestamp
+        columns:
+          - name: merchant_id
+            description: Unique merchant identifier
+            data_tests:
+              - unique
+          Daily FX conversion table. Primarily converts all currencies into SGD.
+          Join on transaction_date = rate_date, transaction_currency = from_currency
+          to get SGD conversion rates.
+        columns:
+          - name: fx_rate_id
+            description: Unique foreign exchange rate record identifier (primary key)
+            data_tests:
+              - unique
+              - not_null
+          - name: rate_date
+            description: Date of the exchange rate
+            data_tests:
+              - not_null
+          - name: from_currency
+            description: Source currency code (USD, MYR, INR, VND, etc.)
+            data_tests:
+              - not_null
+          - name: to_currency
+            description: Target currency code (always SGD)
+            data_tests:
+              - not_null
+              - accepted_values:
+                  values: ['SGD']
+          - name: exchange_rate
+            description: Exchange rate value for conversion
+            data_tests:
+              - not_null
+          - name: created_at
+            description: Record creation timestampes
+        description: >
+          Foreign exchange rates for currency conversion. Contains daily rates
+          for converting from various currencies to SGD.
+        columns:
+          - name: rate_id
+          Main transaction event table. One row per transaction with all details
+          including amount, currency, type, status, and failure reason.
+          Raw amounts are always positive; sign logic applied downstream in MARTS.
+        columns:
+          - name: transaction_id
+            description: Unique transaction identifier (primary key)
+            data_tests:
+              - unique
+              - not_null
+          - name: customer_id
+            description: Foreign key to customer (RAW_CUSTOMERS.customer_id)
+            data_tests:
+              - not_null
+          - name: account_id
+            description: Foreign key to account (RAW_ACCOUNTS.account_id)
+            data_tests:
+              - not_null
+          - name: card_id
+            description: Foreign key to card (RAW_CARDS.card_id)
+            data_tests:
+              - not_null
+          - name: merchant_id
+            description: Foreign key to merchant (RAW_MERCHANTS.merchant_id)
+            data_tests:
+              - not_null
+          - name: transaction_timestamp
+            description: Date and time when transaction occurred
+            data_tests:
+              - not_null
+          - name: transaction_type
+            description: Type of transaction (Purchase, Withdrawal, Deposit, Transfer, Refund)
+            data_tests:
+              - not_null
+              - accepted_values:
+                  values: ['Purchase', 'Withdrawal', 'Deposit', 'Transfer', 'Refund']
+          - name: transaction_status
+            description: Status of transaction (Success, Failed, Pending)
+            data_tests:
+              - not_null
+              - accepted_values:
+                  values: ['Success', 'Failed', 'Pending']
+          - name: transaction_amount
+            description: Transaction amount (always positive in RAW)
+            data_tests:
+              - not_null
+          - name: transaction_currency
+            description: Transaction currency code
+            data_tests:
+              - not_null
+          - name: fee_amount
+            description: Fee charged for the transaction (always positive or zero)
+            data_tests:
+              - not_null
+          - name: channel
+            description: Channel through which transaction was made (POS, Web, Mobile App, ATM)
+            data_tests:
+              - not_null
+              - accepted_values:
+                  values: ['POS', 'Web', 'Mobile App', 'ATM']
+          - name: is_cross_border
+            description: Whether transaction is cross-border
+            data_tests:
+              - not_null
+          - name: failure_reason
+            description: Reason for transaction failure (null if successful)
+          - name: created_at
+            description: Record creation timestamp
+          - name: transaction_amount
+            description: Transaction amount
+          - name: transaction_currency
+            description: Transaction currency code
+          - name: fee_amount
+            description: Fee charged for the transaction
+          - name: transaction_timestamp
+            description: Date and time when transaction occurred
+          - name: transaction_status
+            description: Status of transaction (Success, Failed, Pending)
+          - name: failure_reason
+            description: Reason for transaction failure (if applicable)
+          - name: channel
+            description: Channel through which transaction was made (Mobile, Web, ATM, Branch, API)

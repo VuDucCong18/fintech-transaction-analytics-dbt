@@ -1,0 +1,1326 @@
+version: 2
+
+models:
+  # ==================== STAGING LAYER ====================
+
+  stg_customers:
+    description: >
+      Cleaned and standardized customer dimension from raw source.
+      One row per customer with profile information, KYC status, risk rating,
+      signup details, and calculated age metrics.
+    columns:
+      - name: customer_id
+        description: Unique customer identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: first_name
+        description: Customer first name (trimmed)
+        data_tests:
+          - not_null
+      - name: last_name
+        description: Customer last name (trimmed)
+        data_tests:
+          - not_null
+      - name: full_name
+        description: Full name combining first_name and last_name (derived)
+        data_tests:
+          - not_null
+      - name: email
+        description: Lowercase, trimmed customer email address
+        data_tests:
+          - unique
+          - not_null
+      - name: phone_number
+        description: Customer phone number
+      - name: date_of_birth
+        description: Customer date of birth
+      - name: gender
+        description: Customer gender
+      - name: nationality
+        description: Customer nationality
+      - name: country_of_residence
+        description: Customer country of residence
+      - name: city
+        description: Customer city
+      - name: signup_date
+        description: Date when customer signed up
+        data_tests:
+          - not_null
+      - name: signup_month
+        description: Month of customer signup, truncated to first day (derived)
+      - name: customer_age
+        description: >
+          Calculated age of customer in years (derived from date_of_birth).
+          Null if date_of_birth is missing.
+      - name: kyc_status
+        description: Know Your Customer status (VERIFIED, PENDING, REJECTED)
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['VERIFIED', 'PENDING', 'REJECTED']
+      - name: risk_rating
+        description: Customer risk rating (LOW, MEDIUM, HIGH)
+        data_tests:
+          - accepted_values:
+              values: ['LOW', 'MEDIUM', 'HIGH']
+      - name: customer_segment
+        description: Customer segment for marketing/business purposes (RETAIL, PREMIUM, SME)
+        data_tests:
+          - not_null
+      - name: is_active
+        description: Whether customer is currently active
+        data_tests:
+          - not_null
+      - name: created_at
+        description: Timestamp when record was created in source
+      - name: dbt_loaded_at
+        description: Timestamp when record was loaded into dbt
+
+  stg_accounts:
+    description: >
+      Cleaned and standardized customer bank accounts.
+      One row per account with account details, currency, balance, type, status,
+      and dates. Includes is_active flag for easy filtering.
+    columns:
+      - name: account_id
+        description: Unique account identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to customer
+        data_tests:
+          - not_null
+      - name: account_type
+        description: Type of account (SAVINGS, CHECKING, CREDIT)
+        data_tests:
+          - not_null
+      - name: account_currency
+        description: Account currency code (SGD, USD, MYR, etc.)
+        data_tests:
+          - not_null
+      - name: available_balance
+        description: Current available account balance
+        data_tests:
+          - not_null
+      - name: credit_limit
+        description: Credit limit (for credit accounts, null for others)
+      - name: account_status
+        description: Status of the account (ACTIVE, DORMANT, CLOSED, SUSPENDED)
+        data_tests:
+          - not_null
+      - name: account_is_active
+        description: Boolean flag for active accounts (derived from account_status)
+        data_tests:
+          - not_null
+      - name: opened_date
+        description: Date when account was opened
+        data_tests:
+          - not_null
+      - name: closed_date
+        description: Date when account was closed (null if still open)
+      - name: is_joint_account
+        description: Whether account is a joint account
+        data_tests:
+          - not_null
+      - name: created_at
+        description: Timestamp when record was created in source
+      - name: dbt_loaded_at
+        description: Timestamp when record was loaded into dbt
+
+  stg_cards:
+    description: >
+      Cleaned and standardized customer payment cards.
+      One row per card with card details, network, limits, dates. Includes
+      is_active flag for easy filtering and virtual card indicator.
+    columns:
+      - name: card_id
+        description: Unique card identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: account_id
+        description: Foreign key to associated account
+        data_tests:
+          - not_null
+      - name: card_type
+        description: Type of card (DEBIT, CREDIT, PREPAID)
+        data_tests:
+          - not_null
+      - name: card_network
+        description: Card network (VISA, MASTERCARD, AMEX, etc.)
+        data_tests:
+          - not_null
+      - name: daily_limit
+        description: Daily spending limit on the card
+      - name: card_status
+        description: Status of card (ACTIVE, BLOCKED, EXPIRED, CANCELLED)
+        data_tests:
+          - not_null
+      - name: issued_date
+        description: Card issuance date
+        data_tests:
+          - not_null
+      - name: expiry_date
+        description: Card expiry date
+        data_tests:
+          - not_null
+      - name: is_virtual
+        description: Whether card is virtual (as opposed to physical)
+        data_tests:
+          - not_null
+      - name: card_is_active
+        description: >
+          Boolean flag for active cards. True if ACTIVE status and not expired
+          (derived from card_status and expiry_date)
+        data_tests:
+          - not_null
+      - name: created_at
+        description: Timestamp when record was created in source
+      - name: dbt_loaded_at
+        description: Timestamp when record was loaded into dbt
+
+  stg_merchants:
+    description: >
+      Cleaned and standardized merchant reference data.
+      One row per merchant with business details, category, location,
+      onboarding date, and status. Includes is_active flag.
+    columns:
+      - name: merchant_id
+        description: Unique merchant identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: merchant_name
+        description: Name of the merchant (trimmed)
+        data_tests:
+          - not_null
+      - name: merchant_category
+        description: >
+          Business category (GROCERY, TRAVEL, CRYPTO EXCHANGE, SAAS, E-COMMERCE, ATM, etc.)
+        data_tests:
+          - not_null
+      - name: merchant_country
+        description: Merchant country (standardized uppercase)
+        data_tests:
+          - not_null
+      - name: merchant_city
+        description: Merchant city (standardized uppercase)
+        data_tests:
+          - not_null
+      - name: onboarding_date
+        description: Date merchant was onboarded
+        data_tests:
+          - not_null
+      - name: merchant_status
+        description: Status of merchant (ACTIVE, SUSPENDED, CLOSED)
+        data_tests:
+          - not_null
+      - name: merchant_is_active
+        description: >
+          Boolean flag for active merchants (derived from merchant_status)
+        data_tests:
+          - not_null
+      - name: created_at
+        description: Timestamp when record was created in source
+      - name: dbt_loaded_at
+        description: Timestamp when record was loaded into dbt
+
+  stg_fx_rates:
+    description: >
+      Cleaned and standardized foreign exchange rates for currency conversion.
+      Used to convert transaction amounts to SGD. One row per rate_date,
+      from_currency combination.
+    columns:
+      - name: fx_rate_id
+        description: Unique FX rate record identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: rate_date
+        description: Date of the exchange rate
+        data_tests:
+          - not_null
+      - name: from_currency
+        description: Source currency code (SGD, USD, MYR, INR, VND, etc.)
+        data_tests:
+          - not_null
+      - name: to_currency
+        description: Target currency code (always SGD)
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['SGD']
+      - name: exchange_rate
+        description: Exchange rate value for conversion (numeric precision 18,6)
+        data_tests:
+          - not_null
+      - name: created_at
+        description: Timestamp when record was created in source
+      - name: dbt_loaded_at
+        description: Timestamp when record was loaded into dbt
+
+  stg_transactions:
+    description: >
+      Cleaned and standardized customer transactions.
+      One row per transaction with amount, fee, type, status, channel,
+      is_cross_border flag, and derived date fields. Amounts are in original
+      currency and always positive in staging; sign logic applied in MARTS only.
+    columns:
+      - name: transaction_id
+        description: Unique transaction identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to customer
+        data_tests:
+          - not_null
+      - name: account_id
+        description: Foreign key to account
+        data_tests:
+          - not_null
+      - name: card_id
+        description: Foreign key to card
+        data_tests:
+          - not_null
+      - name: merchant_id
+        description: Foreign key to merchant
+        data_tests:
+          - not_null
+      - name: transaction_timestamp
+        description: DateTime when transaction occurred
+        data_tests:
+          - not_null
+      - name: transaction_date
+        description: Date of transaction (derived from transaction_timestamp)
+        data_tests:
+          - not_null
+      - name: transaction_month
+        description: >
+          Month of transaction truncated to first day (derived from transaction_timestamp)
+        data_tests:
+          - not_null
+      - name: transaction_type
+        description: >
+          Type of transaction (Purchase, Withdrawal, Deposit, Transfer, Refund).
+          Used to determine sign of signed_transaction_amount in MARTS.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['Purchase', 'Withdrawal', 'Deposit', 'Transfer', 'Refund']
+      - name: transaction_amount
+        description: >
+          Transaction amount in original currency. Always positive in STAGING.
+          Sign logic applied downstream in MARTS via signed_transaction_amount.
+        data_tests:
+          - not_null
+      - name: transaction_currency
+        description: Currency code of transaction (SGD, USD, MYR, etc.)
+        data_tests:
+          - not_null
+      - name: fee_amount
+        description: Transaction fee (always positive or zero in STAGING)
+        data_tests:
+          - not_null
+      - name: transaction_status
+        description: Status of transaction (Success, Failed, Pending)
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['Success', 'Failed', 'Pending']
+      - name: channel
+        description: Channel through which transaction was made (POS, Web, Mobile App, ATM)
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['POS', 'Web', 'Mobile App', 'ATM']
+      - name: is_cross_border
+        description: >
+          Whether transaction is cross-border (from RAW_TRANSACTIONS).
+          Indicates if transaction currency differs from account currency.
+        data_tests:
+          - not_null
+      - name: failure_reason
+        description: Reason for transaction failure (null if successful)
+      - name: created_at
+        description: Timestamp when record was created in source
+      - name: dbt_loaded_at
+        description: Timestamp when record was loaded into dbt
+
+  # ==================== MART LAYER - CORE DIMENSIONS & FACT ====================
+
+  dim_customers:
+    description: >
+      Analytics-ready customer dimension table serving as the customer master.
+      One row per customer with complete profile, KYC status, risk rating,
+      segment, and age information for customer analytics and segmentation.
+    columns:
+      - name: customer_id
+        description: Unique customer identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: first_name
+        description: Customer first name
+      - name: last_name
+        description: Customer last name
+      - name: full_name
+        description: Full name (first_name + last_name)
+      - name: email
+        description: Customer email address
+      - name: phone_number
+        description: Customer phone number
+      - name: date_of_birth
+        description: Customer date of birth
+      - name: gender
+        description: Customer gender
+      - name: nationality
+        description: Customer nationality
+      - name: country_of_residence
+        description: Customer country of residence
+      - name: city
+        description: Customer city
+      - name: signup_date
+        description: Date customer signed up
+      - name: signup_month
+        description: Month of signup for cohort analysis
+      - name: customer_age
+        description: Age of customer account in years
+      - name: kyc_status
+        description: KYC verification status
+      - name: risk_rating
+        description: Customer risk rating
+      - name: customer_segment
+        description: Business segment classification (RETAIL, PREMIUM, SME)
+      - name: is_active
+        description: Whether the customer is currently active
+
+  dim_accounts:
+    description: >
+      Analytics-ready account dimension.
+      One row per account with account type, currency, balance, status
+      and date information for account portfolio analytics.
+    columns:
+      - name: account_id
+        description: Unique account identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to customer
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: account_type
+        description: Type of account (SAVINGS, CHECKING, CREDIT)
+      - name: account_currency
+        description: Account currency code (SGD, USD, etc.)
+      - name: available_balance
+        description: Current available balance
+      - name: credit_limit
+        description: Credit limit (if applicable)
+      - name: account_status
+        description: Current account status
+      - name: account_is_active
+        description: Boolean flag for active accounts
+      - name: opened_date
+        description: Account opening date
+      - name: closed_date
+        description: Account closing date (if closed)
+      - name: is_joint_account
+        description: Whether the account is joint
+
+  dim_cards:
+    description: >
+      Analytics-ready card dimension.
+      One row per card with card type, network, daily limit, expiry,
+      and status information for card portfolio analytics.
+    columns:
+      - name: card_id
+        description: Unique card identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: account_id
+        description: Foreign key to account
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_accounts')
+              field: account_id
+      - name: card_type
+        description: Type of card (DEBIT, CREDIT, PREPAID)
+      - name: card_network
+        description: Card network (VISA, MASTERCARD, etc.)
+      - name: daily_limit
+        description: Daily spending limit
+      - name: card_status
+        description: Current card status
+      - name: issued_date
+        description: Card issuance date
+      - name: expiry_date
+        description: Card expiry date
+      - name: is_virtual
+        description: Whether card is virtual
+      - name: card_is_active
+        description: Boolean flag for active, non-expired cards
+
+  dim_merchants:
+    description: >
+      Analytics-ready merchant dimension.
+      One row per merchant with category, location, onboarding date,
+      and status for merchant analytics and performance tracking.
+    columns:
+      - name: merchant_id
+        description: Unique merchant identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: merchant_name
+        description: Merchant business name
+      - name: merchant_category
+        description: Merchant business category
+      - name: merchant_country
+        description: Merchant country
+      - name: merchant_city
+        description: Merchant city
+      - name: onboarding_date
+        description: Date merchant was onboarded
+      - name: merchant_status
+        description: Current merchant status
+      - name: merchant_is_active
+        description: Boolean flag for active merchants
+
+  fact_transactions:
+    description: >
+      Core transaction fact table for BI and analytics.
+      One row per transaction with foreign keys to customers, accounts, cards,
+      merchants. Includes signed amounts, SGD equivalents, status flags,
+      cross-border indicators, and channel information. This is the central
+      table for transaction analytics, revenue reporting, and customer
+      behavior analysis.
+    columns:
+      - name: transaction_id
+        description: Unique transaction identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to customer
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: account_id
+        description: Foreign key to account
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_accounts')
+              field: account_id
+      - name: card_id
+        description: Foreign key to card
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_cards')
+              field: card_id
+      - name: merchant_id
+        description: Foreign key to merchant
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_merchants')
+              field: merchant_id
+      - name: transaction_date
+        description: Date of transaction
+        data_tests:
+          - not_null
+      - name: transaction_month
+        description: Month of transaction (truncated to first day)
+        data_tests:
+          - not_null
+      - name: transaction_type
+        description: >
+          Type of transaction (Purchase, Withdrawal, Deposit, Transfer, Refund).
+          Used to determine sign of signed_transaction_amount:
+          - Purchase, Withdrawal, Transfer = outflow (negative)
+          - Deposit, Refund = inflow (positive)
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['Purchase', 'Withdrawal', 'Deposit', 'Transfer', 'Refund']
+      - name: transaction_status
+        description: Status of transaction (Success, Failed, Pending)
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['Success', 'Failed', 'Pending']
+      - name: channel
+        description: Channel through which transaction was made
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['POS', 'Web', 'Mobile App', 'ATM']
+      - name: failure_reason
+        description: Reason for transaction failure (null if successful)
+      - name: transaction_amount
+        description: >
+          Transaction amount in original currency. Always positive.
+          Apply signed_transaction_amount for cash flow analysis.
+        data_tests:
+          - not_null
+      - name: transaction_currency
+        description: Currency code of transaction
+        data_tests:
+          - not_null
+      - name: fee_amount
+        description: Transaction fee (always positive)
+        data_tests:
+          - not_null
+      - name: account_currency
+        description: Account currency (from joined dim_accounts)
+      - name: signed_transaction_amount
+        description: >
+          Signed transaction amount for cash flow analysis.
+          Outflows (Purchase, Withdrawal, Transfer) are negative.
+          Inflows (Deposit, Refund) are positive.
+        data_tests:
+          - not_null
+      - name: transaction_amount_sgd
+        description: >
+          Transaction amount converted to SGD using FX rates.
+          Direct SGD transactions use amount as-is.
+          Other currencies joined to stg_fx_rates using transaction_date.
+        data_tests:
+          - not_null
+      - name: fee_amount_sgd
+        description: Fee amount converted to SGD using FX rates
+        data_tests:
+          - not_null
+      - name: is_successful
+        description: Boolean flag for successful transactions
+      - name: is_failed
+        description: Boolean flag for failed transactions
+      - name: is_pending
+        description: Boolean flag for pending transactions
+      - name: is_cross_border
+        description: >
+          Boolean flag for cross-border transactions
+          (from RAW_TRANSACTIONS.is_cross_border)
+
+  # ==================== MART LAYER - AGGREGATES ====================
+
+  fct_daily_transaction_summary:
+    description: >
+      Daily aggregated transaction metrics by currency, channel, and status.
+      Used for monitoring daily transaction volume, value, and performance.
+      Supports dashboards for transaction analysis across channels and currencies.
+    columns:
+      - name: transaction_date
+        description: Date of transactions
+        data_tests:
+          - not_null
+      - name: transaction_currency
+        description: Currency of transactions
+        data_tests:
+          - not_null
+      - name: channel
+        description: Transaction channel
+        data_tests:
+          - not_null
+      - name: transaction_status
+        description: Transaction status grouping
+        data_tests:
+          - not_null
+      - name: transaction_count
+        description: Total number of transactions
+      - name: successful_transaction_count
+        description: Number of successful transactions
+      - name: failed_transaction_count
+        description: Number of failed transactions
+      - name: pending_transaction_count
+        description: Number of pending transactions
+      - name: total_transaction_amount
+        description: Total transaction amount in original currency
+      - name: total_transaction_amount_sgd
+        description: Total transaction amount in SGD
+      - name: total_fee_amount
+        description: Total fees in original currency
+      - name: total_fee_amount_sgd
+        description: Total fees in SGD
+      - name: success_rate
+        description: Percentage of successful transactions
+      - name: failed_rate
+        description: Percentage of failed transactions
+      - name: cross_border_transaction_count
+        description: Count of cross-border transactions
+
+  fct_customer_transaction_summary:
+    description: >
+      Customer-level aggregated transaction metrics.
+      One row per customer with lifetime transaction statistics.
+      Used for customer segmentation, behavior analysis, and customer value metrics.
+    columns:
+      - name: customer_id
+        description: Unique customer identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: total_transactions
+        description: Total number of transactions by customer
+      - name: successful_transactions
+        description: Count of successful transactions
+      - name: failed_transactions
+        description: Count of failed transactions
+      - name: pending_transactions
+        description: Count of pending transactions
+      - name: total_spend_sgd
+        description: Total transaction amount in SGD (absolute value)
+      - name: total_fee_generated_sgd
+        description: Total fees generated from customer transactions in SGD
+      - name: first_transaction_date
+        description: Date of customer's first transaction
+      - name: last_transaction_date
+        description: Date of customer's most recent transaction
+      - name: active_transaction_days
+        description: Number of distinct days customer conducted transactions
+      - name: cross_border_transactions
+        description: Total count of cross-border transactions by customer
+      - name: preferred_channel
+        description: Most frequently used transaction channel
+      - name: most_used_transaction_type
+        description: Most frequently used transaction type
+    description: >
+      Cleaned and standardized customer dimension from raw source.
+      One row per customer with profile information, KYC status, signup details,
+      and calculated age metrics.
+    columns:
+      - name: customer_id
+        description: Unique customer identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: Trimmed customer full name
+        data_tests:
+          - not_null
+      - name: email
+        description: Lowercase, trimmed customer email address
+        data_tests:
+          - unique
+          - not_null
+      - name: country
+        description: Standardized uppercase customer country
+        data_tests:
+          - not_null
+      - name: city
+        description: Standardized uppercase customer city
+      - name: signed_up_date
+        description: Date when customer account was created
+        data_tests:
+          - not_null
+      - name: signup_month
+        description: Month of customer signup, truncated to first day
+      - name: customer_age
+        description: Calculated age of customer account in years
+      - name: kyc_status
+        description: Know Your Customer status (VERIFIED, PENDING, REJECTED)
+        data_tests:
+          - accepted_values:
+              values: ['VERIFIED', 'PENDING', 'REJECTED']
+      - name: customer_segment
+        description: Customer segment for marketing/business purposes
+      - name: phone_number
+        description: Customer phone number (if available)
+      - name: dbt_loaded_at
+        description: Timestamp when record was loaded into dbt
+
+  stg_accounts:
+    description: >
+      Cleaned and standardized customer bank accounts.
+      One row per account with account details, type, currency balance,
+      status, and dates. Includes is_active flag for easy filtering.
+    columns:
+      - name: account_id
+        description: Unique account identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to customer
+        data_tests:
+          - not_null
+      - name: account_type
+        description: Type of account (CHECKING, SAVINGS, etc.)
+        data_tests:
+          - not_null
+      - name: currency
+        description: Account currency code (SGD, USD, etc.)
+        data_tests:
+          - not_null
+      - name: balance
+        description: Current account balance
+        data_tests:
+          - not_null
+      - name: account_status
+        description: Status of the account (ACTIVE, CLOSED, SUSPENDED)
+        data_tests:
+          - not_null
+      - name: account_is_active
+        description: Boolean flag for active accounts (derived from account_status)
+        data_tests:
+          - not_null
+      - name: opened_date
+        description: Date when account was opened
+        data_tests:
+          - not_null
+      - name: closed_date
+        description: Date when account was closed (null if still open)
+      - name: dbt_loaded_at
+        description: Timestamp when record was loaded into dbt
+
+  stg_cards:
+    description: >
+      Cleaned and standardized customer payment cards.
+      One row per card with card details, network, limits, dates, and
+      active status. Includes is_active flag for easy filtering.
+    columns:
+      - name: card_id
+        description: Unique card identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: account_id
+        description: Foreign key to associated account
+        data_tests:
+          - not_null
+      - name: card_type
+        description: Type of card (CREDIT, DEBIT)
+        data_tests:
+          - not_null
+      - name: card_network
+        description: Card network (VISA, MASTERCARD, AMEX, etc.)
+        data_tests:
+          - not_null
+      - name: credit_limit
+        description: Credit limit (for credit cards)
+      - name: issued_date
+        description: Card issuance date
+        data_tests:
+          - not_null
+      - name: expiry_date
+        description: Card expiry date
+        data_tests:
+          - not_null
+      - name: card_status
+        description: Status of card (ACTIVE, EXPIRED, BLOCKED, INACTIVE)
+        data_tests:
+          - not_null
+      - name: card_is_active
+        description: >
+          Boolean flag for active cards. True if ACTIVE status and not expired
+          (derived from card_status and expiry_date)
+        data_tests:
+          - not_null
+      - name: dbt_loaded_at
+        description: Timestamp when record was loaded into dbt
+
+  stg_merchants:
+    description: >
+      Cleaned and standardized merchant reference data.
+      One row per merchant with business details, category, location,
+      onboarding date, and status. Includes is_active flag.
+    columns:
+      - name: merchant_id
+        description: Unique merchant identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: merchant_name
+        description: Name of the merchant
+        data_tests:
+          - not_null
+      - name: merchant_category
+        description: >
+          Merchant business category (RETAIL, FOOD_BEVERAGE, ENTERTAINMENT, etc.)
+        data_tests:
+          - not_null
+      - name: country
+        description: Merchant country (standardized uppercase)
+        data_tests:
+          - not_null
+      - name: city
+        description: Merchant city (standardized uppercase)
+        data_tests:
+          - not_null
+      - name: onboarding_date
+        description: Date merchant was onboarded
+        data_tests:
+          - not_null
+      - name: merchant_status
+        description: Status of merchant (ACTIVE, INACTIVE, SUSPENDED)
+        data_tests:
+          - not_null
+      - name: merchant_is_active
+        description: >
+          Boolean flag for active merchants (derived from merchant_status)
+        data_tests:
+          - not_null
+      - name: dbt_loaded_at
+        description: Timestamp when record was loaded into dbt
+
+  stg_fx_rates:
+    description: >
+      Cleaned and standardized foreign exchange rates for currency conversion.
+      Used to convert transaction amounts to SGD.
+    columns:
+      - name: rate_id
+        description: Unique FX rate record identifier
+        data_tests:
+          - unique
+          - not_null
+      - name: from_currency
+        description: Source currency code (SGD, USD, EUR, etc.)
+        data_tests:
+          - not_null
+      - name: to_currency
+        description: Target currency code (always SGD)
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['SGD']
+      - name: rate_date
+        description: Date of the exchange rate
+        data_tests:
+          - not_null
+      - name: exchange_rate
+        description: Exchange rate value for conversion
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: numeric
+      - name: dbt_loaded_at
+        description: Timestamp when record was loaded into dbt
+
+  stg_transactions:
+    description: >
+      Cleaned and standardized customer transactions.
+      One row per transaction with amount, fee, type, status, channel,
+      and derived date fields. Amounts are in original currency.
+    columns:
+      - name: transaction_id
+        description: Unique transaction identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to customer
+        data_tests:
+          - not_null
+      - name: account_id
+        description: Foreign key to account
+        data_tests:
+          - not_null
+      - name: card_id
+        description: Foreign key to card
+        data_tests:
+          - not_null
+      - name: merchant_id
+        description: Foreign key to merchant
+        data_tests:
+          - not_null
+      - name: transaction_type
+        description: >
+          Type of transaction (PURCHASE, REFUND, DEPOSIT, WITHDRAWAL, TRANSFER)
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['PURCHASE', 'REFUND', 'DEPOSIT', 'WITHDRAWAL', 'TRANSFER']
+      - name: transaction_amount
+        description: Transaction amount in original currency (always positive)
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: numeric
+      - name: transaction_currency
+        description: Currency code of transaction
+        data_tests:
+          - not_null
+      - name: fee_amount
+        description: Transaction fee amount (always positive)
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: numeric
+      - name: transaction_timestamp
+        description: DateTime when transaction occurred
+        data_tests:
+          - not_null
+      - name: transaction_date
+        description: Date of transaction (derived from transaction_timestamp)
+        data_tests:
+          - not_null
+      - name: transaction_month
+        description: >
+          Month of transaction truncated to first day (derived from transaction_timestamp)
+        data_tests:
+          - not_null
+      - name: transaction_status
+        description: Status of transaction (SUCCESS, FAILED, PENDING)
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['SUCCESS', 'FAILED', 'PENDING']
+      - name: failure_reason
+        description: Reason for transaction failure (null if successful)
+      - name: channel
+        description: Channel through which transaction was made
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['MOBILE', 'WEB', 'ATM', 'BRANCH', 'API']
+      - name: dbt_loaded_at
+        description: Timestamp when record was loaded into dbt
+
+  # ==================== MART LAYER - CORE DIMENSIONS & FACT ====================
+
+  dim_customers:
+    description: >
+      Analytics-ready customer dimension.
+      One row per customer with complete profile, KYC status, segment,
+      age, and signup information for customer analytics and segmentation.
+    columns:
+      - name: customer_id
+        description: Unique customer identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: Customer full name
+      - name: email
+        description: Customer email address
+      - name: country
+        description: Customer country
+      - name: city
+        description: Customer city
+      - name: signed_up_date
+        description: Date customer account was created
+      - name: signup_month
+        description: Month of signup for cohort analysis
+      - name: customer_age
+        description: Age of customer account in years
+      - name: kyc_status
+        description: KYC verification status
+      - name: customer_segment
+        description: Business segment classification
+      - name: phone_number
+        description: Customer phone number
+
+  dim_accounts:
+    description: >
+      Analytics-ready account dimension.
+      One row per account with account type, currency, balance, status
+      and date information for account analytics.
+    columns:
+      - name: account_id
+        description: Unique account identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to customer
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: account_type
+        description: Type of account
+      - name: currency
+        description: Account currency
+      - name: balance
+        description: Current account balance
+      - name: account_status
+        description: Current account status
+      - name: account_is_active
+        description: Boolean flag for active accounts
+      - name: opened_date
+        description: Account opening date
+      - name: closed_date
+        description: Account closing date (if closed)
+
+  dim_cards:
+    description: >
+      Analytics-ready card dimension.
+      One row per card with card type, network, credit limit, expiry,
+      and status information for card portfolio analytics.
+    columns:
+      - name: card_id
+        description: Unique card identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: account_id
+        description: Foreign key to account
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_accounts')
+              field: account_id
+      - name: card_type
+        description: Type of card (CREDIT, DEBIT)
+      - name: card_network
+        description: Card network (VISA, MASTERCARD, etc.)
+      - name: credit_limit
+        description: Credit limit for credit cards
+      - name: issued_date
+        description: Card issuance date
+      - name: expiry_date
+        description: Card expiry date
+      - name: card_status
+        description: Current card status
+      - name: card_is_active
+        description: Boolean flag for active, non-expired cards
+
+  dim_merchants:
+    description: >
+      Analytics-ready merchant dimension.
+      One row per merchant with category, location, onboarding date,
+      and status for merchant analytics and performance tracking.
+    columns:
+      - name: merchant_id
+        description: Unique merchant identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: merchant_name
+        description: Merchant business name
+      - name: merchant_category
+        description: Merchant business category
+      - name: country
+        description: Merchant country
+      - name: city
+        description: Merchant city
+      - name: onboarding_date
+        description: Date merchant was onboarded
+      - name: merchant_status
+        description: Current merchant status
+      - name: merchant_is_active
+        description: Boolean flag for active merchants
+
+  fact_transactions:
+    description: >
+      Core transaction fact table for BI and analytics.
+      One row per transaction with foreign keys to customers, accounts, cards,
+      merchants. Includes signed amounts, SGD equivalents, status flags,
+      and cross-border indicators. This is the central table for transaction
+      analytics, revenue reporting, and customer behavior analysis.
+    columns:
+      - name: transaction_id
+        description: Unique transaction identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to customer
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: account_id
+        description: Foreign key to account
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_accounts')
+              field: account_id
+      - name: card_id
+        description: Foreign key to card
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_cards')
+              field: card_id
+      - name: merchant_id
+        description: Foreign key to merchant
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_merchants')
+              field: merchant_id
+      - name: transaction_date
+        description: Date of transaction
+        data_tests:
+          - not_null
+      - name: transaction_month
+        description: Month of transaction (truncated to first day)
+        data_tests:
+          - not_null
+      - name: transaction_type
+        description: >
+          Type of transaction (PURCHASE, REFUND, DEPOSIT, WITHDRAWAL, TRANSFER).
+          Used to determine sign of signed_transaction_amount.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['PURCHASE', 'REFUND', 'DEPOSIT', 'WITHDRAWAL', 'TRANSFER']
+      - name: transaction_status
+        description: Status of transaction (SUCCESS, FAILED, PENDING)
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['SUCCESS', 'FAILED', 'PENDING']
+      - name: channel
+        description: Channel through which transaction was made
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['MOBILE', 'WEB', 'ATM', 'BRANCH', 'API']
+      - name: failure_reason
+        description: Reason for transaction failure (null if successful)
+      - name: transaction_amount
+        description: >
+          Transaction amount in original currency. Always positive.
+          Apply signed_transaction_amount for cash flow analysis.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+      - name: transaction_currency
+        description: Currency code of transaction
+        data_tests:
+          - not_null
+      - name: fee_amount
+        description: Transaction fee (always positive)
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+      - name: signed_transaction_amount
+        description: >
+          Signed transaction amount for cash flow analysis.
+          Outflows (PURCHASE, WITHDRAWAL, TRANSFER) are negative.
+          Inflows (DEPOSIT, REFUND) are positive.
+        data_tests:
+          - not_null
+      - name: transaction_amount_sgd
+        description: >
+          Transaction amount converted to SGD using FX rates.
+          Direct SGD transactions use amount as-is.
+          Other currencies joined to stg_fx_rates using transaction_date.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+      - name: fee_amount_sgd
+        description: Fee amount converted to SGD using FX rates
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+      - name: is_successful
+        description: Boolean flag for successful transactions
+      - name: is_failed
+        description: Boolean flag for failed transactions
+      - name: is_pending
+        description: Boolean flag for pending transactions
+      - name: is_cross_border
+        description: >
+          Boolean flag for cross-border transactions
+          (transaction_currency != account_currency)
+
+  # ==================== MART LAYER - AGGREGATES ====================
+
+  fct_daily_transaction_summary:
+    description: >
+      Daily aggregated transaction metrics by currency, channel, and status.
+      Used for monitoring daily transaction volume, value, and performance.
+      Supports dashboards for transaction analysis across channels and currencies.
+    columns:
+      - name: transaction_date
+        description: Date of transactions
+        data_tests:
+          - not_null
+      - name: transaction_currency
+        description: Currency of transactions
+        data_tests:
+          - not_null
+      - name: channel
+        description: Transaction channel
+        data_tests:
+          - not_null
+      - name: transaction_status
+        description: Transaction status grouping
+        data_tests:
+          - not_null
+      - name: transaction_count
+        description: Total number of transactions
+      - name: successful_transaction_count
+        description: Number of successful transactions
+      - name: failed_transaction_count
+        description: Number of failed transactions
+      - name: pending_transaction_count
+        description: Number of pending transactions
+      - name: total_transaction_amount
+        description: Total transaction amount in original currency
+      - name: total_transaction_amount_sgd
+        description: Total transaction amount in SGD
+      - name: total_fee_amount
+        description: Total fees in original currency
+      - name: total_fee_amount_sgd
+        description: Total fees in SGD
+      - name: success_rate
+        description: Percentage of successful transactions
+      - name: failed_rate
+        description: Percentage of failed transactions
+      - name: cross_border_transaction_count
+        description: Count of cross-border transactions
+
+  fct_customer_transaction_summary:
+    description: >
+      Customer-level aggregated transaction metrics.
+      One row per customer with lifetime transaction statistics.
+      Used for customer segmentation, behavior analysis, and customer value metrics.
+    columns:
+      - name: customer_id
+        description: Unique customer identifier (primary key)
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: total_transactions
+        description: Total number of transactions by customer
+      - name: successful_transactions
+        description: Count of successful transactions
+      - name: failed_transactions
+        description: Count of failed transactions
+      - name: pending_transactions
+        description: Count of pending transactions
+      - name: total_spend_sgd
+        description: Total transaction amount in SGD
+      - name: total_fee_generated_sgd
+        description: Total fees generated from customer transactions in SGD
+      - name: first_transaction_date
+        description: Date of customer's first transaction
+      - name: last_transaction_date
+        description: Date of customer's most recent transaction
+      - name: active_transaction_days
+        description: Number of distinct days customer conducted transactions
+      - name: cross_border_transactions
+        description: Total count of cross-border transactions by customer
+      - name: preferred_channel
+        description: Most frequently used transaction channel
+      - name: most_used_transaction_type
+        description: Most frequently used transaction type
