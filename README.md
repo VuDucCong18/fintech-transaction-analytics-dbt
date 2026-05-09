@@ -2,7 +2,8 @@
 
 ## Author
 
-**Vu Duc Cong**
+I am **Vu Duc Cong**
+
 Fresh graduate from Singapore Management University (SMU)
 Bachelor of Science in Information Systems, with a second major in Data Science & Analytics
 
