@@ -10,7 +10,7 @@ with source_data as (
         created_at,
         current_timestamp() as dbt_loaded_at
 
-    from {{ source('fintech_raw', 'raw_fx_rates') }}
+    from {{ source('fintech_raw', 'RAW_FX_RATES') }}
 )
 
 select * from source_data
