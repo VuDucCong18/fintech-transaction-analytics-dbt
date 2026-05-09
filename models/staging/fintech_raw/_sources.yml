@@ -1,0 +1,193 @@
+version: 2
+
+sources:
+  - name: fintech_raw
+    description: Raw fintech customer transaction data stored in Snowflake.
+    database: FINTECH_ANALYTICS
+    schema: RAW
+
+    tables:
+      - name: RAW_CUSTOMERS
+        description: Customer master profile table.
+        columns:
+          - name: customer_id
+            description: Unique customer identifier.
+            data_tests:
+              - unique
+              - not_null
+          - name: customer_name
+            description: Full customer name.
+          - name: email
+            description: Customer email address.
+            data_tests:
+              - unique
+              - not_null
+          - name: gender
+            description: Customer gender.
+          - name: date_of_birth
+            description: Customer date of birth.
+          - name: country
+            description: Customer country.
+          - name: city
+            description: Customer city.
+          - name: signup_date
+            description: Date when the customer signed up.
+          - name: customer_segment
+            description: Customer segment.
+          - name: kyc_status
+            description: Customer KYC verification status.
+          - name: created_at
+            description: Record creation timestamp.
+
+      - name: RAW_ACCOUNTS
+        description: Customer account table. One customer can have multiple accounts.
+        columns:
+          - name: account_id
+            description: Unique account identifier.
+            data_tests:
+              - unique
+              - not_null
+          - name: customer_id
+            description: Foreign key to RAW_CUSTOMERS.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('fintech_raw', 'RAW_CUSTOMERS')
+                    field: customer_id
+          - name: account_type
+            description: Type of account.
+          - name: account_status
+            description: Current account status.
+          - name: opened_date
+            description: Date when account was opened.
+          - name: closed_date
+            description: Date when account was closed.
+          - name: account_currency
+            description: Account currency.
+          - name: current_balance
+            description: Current account balance.
+          - name: created_at
+            description: Record creation timestamp.
+
+      - name: RAW_CARDS
+        description: Payment card table. One account can have multiple cards.
+        columns:
+          - name: card_id
+            description: Unique card identifier.
+            data_tests:
+              - unique
+              - not_null
+          - name: customer_id
+            description: Foreign key to RAW_CUSTOMERS.
+            data_tests:
+              - not_null
+          - name: account_id
+            description: Foreign key to RAW_ACCOUNTS.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('fintech_raw', 'RAW_ACCOUNTS')
+                    field: account_id
+          - name: card_type
+            description: Type of card.
+          - name: card_network
+            description: Card network.
+          - name: card_status
+            description: Current card status.
+          - name: issued_date
+            description: Card issue date.
+          - name: expiry_date
+            description: Card expiry date.
+          - name: credit_limit
+            description: Card credit limit.
+          - name: created_at
+            description: Record creation timestamp.
+
+      - name: RAW_MERCHANTS
+        description: Merchant master data.
+        columns:
+          - name: merchant_id
+            description: Unique merchant identifier.
+            data_tests:
+              - unique
+              - not_null
+          - name: merchant_name
+            description: Merchant name.
+          - name: merchant_category
+            description: Merchant business category.
+          - name: merchant_country
+            description: Merchant country.
+          - name: merchant_city
+            description: Merchant city.
+          - name: onboarding_date
+            description: Merchant onboarding date.
+          - name: merchant_status
+            description: Merchant status.
+          - name: created_at
+            description: Record creation timestamp.
+
+      - name: RAW_FX_RATES
+        description: FX rates used for currency conversion.
+        columns:
+          - name: fx_rate_id
+            description: Unique FX rate identifier.
+            data_tests:
+              - unique
+              - not_null
+          - name: rate_date
+            description: Date of FX rate.
+          - name: from_currency
+            description: Source currency.
+          - name: to_currency
+            description: Target currency.
+          - name: exchange_rate
+            description: Exchange rate value.
+          - name: created_at
+            description: Record creation timestamp.
+
+      - name: RAW_TRANSACTIONS
+        description: Main raw transaction event table.
+        columns:
+          - name: transaction_id
+            description: Unique transaction identifier.
+            data_tests:
+              - unique
+              - not_null
+          - name: customer_id
+            description: Foreign key to RAW_CUSTOMERS.
+            data_tests:
+              - not_null
+          - name: account_id
+            description: Foreign key to RAW_ACCOUNTS.
+            data_tests:
+              - not_null
+          - name: card_id
+            description: Foreign key to RAW_CARDS.
+            data_tests:
+              - not_null
+          - name: merchant_id
+            description: Foreign key to RAW_MERCHANTS.
+            data_tests:
+              - not_null
+          - name: transaction_timestamp
+            description: Timestamp when transaction occurred.
+          - name: transaction_type
+            description: Purchase, Withdrawal, Deposit, Transfer, or Refund.
+          - name: transaction_status
+            description: Success, Failed, or Pending.
+          - name: transaction_amount
+            description: Raw transaction amount, always positive.
+          - name: transaction_currency
+            description: Transaction currency.
+          - name: fee_amount
+            description: Transaction fee amount.
+          - name: channel
+            description: Transaction channel.
+          - name: is_cross_border
+            description: Whether transaction is cross-border.
+          - name: failure_reason
+            description: Reason for failed transaction.
+          - name: created_at
+            description: Record creation timestamp.

@@ -1,0 +1,124 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: Cleaned customer staging model from RAW_CUSTOMERS.
+    columns:
+      - name: customer_id
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_name
+      - name: email
+        data_tests:
+          - unique
+          - not_null
+      - name: gender
+      - name: date_of_birth
+      - name: country
+      - name: city
+      - name: signup_date
+      - name: customer_segment
+      - name: kyc_status
+      - name: customer_age
+      - name: created_at
+
+  - name: stg_accounts
+    description: Cleaned account staging model from RAW_ACCOUNTS.
+    columns:
+      - name: account_id
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        data_tests:
+          - not_null
+      - name: account_type
+      - name: account_status
+      - name: opened_date
+      - name: closed_date
+      - name: account_currency
+      - name: current_balance
+      - name: account_is_active
+      - name: created_at
+
+  - name: stg_cards
+    description: Cleaned card staging model from RAW_CARDS.
+    columns:
+      - name: card_id
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+      - name: account_id
+        data_tests:
+          - not_null
+      - name: card_type
+      - name: card_network
+      - name: card_status
+      - name: issued_date
+      - name: expiry_date
+      - name: credit_limit
+      - name: card_is_active
+      - name: created_at
+
+  - name: stg_merchants
+    description: Cleaned merchant staging model from RAW_MERCHANTS.
+    columns:
+      - name: merchant_id
+        data_tests:
+          - unique
+          - not_null
+      - name: merchant_name
+      - name: merchant_category
+      - name: merchant_country
+      - name: merchant_city
+      - name: onboarding_date
+      - name: merchant_status
+      - name: merchant_is_active
+      - name: created_at
+
+  - name: stg_fx_rates
+    description: Cleaned FX rate staging model from RAW_FX_RATES.
+    columns:
+      - name: fx_rate_id
+        data_tests:
+          - unique
+          - not_null
+      - name: rate_date
+      - name: from_currency
+      - name: to_currency
+      - name: exchange_rate
+      - name: created_at
+
+  - name: stg_transactions
+    description: Cleaned transaction staging model from RAW_TRANSACTIONS.
+    columns:
+      - name: transaction_id
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        data_tests:
+          - not_null
+      - name: account_id
+        data_tests:
+          - not_null
+      - name: card_id
+        data_tests:
+          - not_null
+      - name: merchant_id
+        data_tests:
+          - not_null
+      - name: transaction_timestamp
+      - name: transaction_date
+      - name: transaction_month
+      - name: transaction_type
+      - name: transaction_status
+      - name: transaction_amount
+      - name: transaction_currency
+      - name: fee_amount
+      - name: channel
+      - name: is_cross_border
+      - name: failure_reason
+      - name: created_at

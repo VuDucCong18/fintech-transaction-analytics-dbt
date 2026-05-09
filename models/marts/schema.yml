@@ -1,0 +1,536 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: Customer dimension table with one row per customer.
+    columns:
+      - name: customer_id
+        description: Unique customer identifier.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_name
+        description: Customer full name.
+        data_tests:
+          - not_null
+
+      - name: email
+        description: Customer email address.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: gender
+        description: Customer gender.
+
+      - name: date_of_birth
+        description: Customer date of birth.
+
+      - name: country
+        description: Customer country.
+
+      - name: city
+        description: Customer city.
+
+      - name: signup_date
+        description: Customer signup date.
+        data_tests:
+          - not_null
+
+      - name: signup_month
+        description: Signup month for cohort analysis.
+
+      - name: customer_age
+        description: Customer age calculated from date of birth.
+
+      - name: kyc_status
+        description: Customer KYC status.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['VERIFIED', 'PENDING', 'REJECTED']
+
+      - name: kyc_is_verified
+        description: Boolean flag showing whether customer KYC is verified.
+
+      - name: customer_segment
+        description: Customer segment.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['STANDARD', 'PREMIUM', 'BUSINESS']
+
+      - name: created_at
+        description: Raw record creation timestamp.
+
+      - name: dbt_loaded_at
+        description: Timestamp when dbt loaded the model.
+
+  - name: dim_accounts
+    description: Account dimension table with one row per account.
+    columns:
+      - name: account_id
+        description: Unique account identifier.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_id
+        description: Foreign key to dim_customers.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
+
+      - name: account_type
+        description: Type of account.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['SAVINGS', 'INVESTMENT', 'MULTI-CURRENCY', 'BUSINESS']
+
+      - name: account_status
+        description: Current account status.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['ACTIVE', 'FROZEN', 'DORMANT', 'CLOSED']
+
+      - name: opened_date
+        description: Account opening date.
+        data_tests:
+          - not_null
+
+      - name: closed_date
+        description: Account closing date, if applicable.
+
+      - name: account_currency
+        description: Account currency.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['SGD', 'USD', 'MYR', 'VND', 'INR']
+
+      - name: current_balance
+        description: Current account balance.
+
+      - name: account_is_active
+        description: Boolean flag showing whether the account is active.
+        data_tests:
+          - not_null
+
+      - name: created_at
+        description: Raw record creation timestamp.
+
+      - name: dbt_loaded_at
+        description: Timestamp when dbt loaded the model.
+
+  - name: dim_cards
+    description: Card dimension table with one row per card.
+    columns:
+      - name: card_id
+        description: Unique card identifier.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_id
+        description: Foreign key to dim_customers.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
+
+      - name: account_id
+        description: Foreign key to dim_accounts.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_accounts')
+                field: account_id
+
+      - name: card_type
+        description: Type of card.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['VIRTUAL', 'DEBIT', 'CREDIT']
+
+      - name: card_network
+        description: Card network.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['VISA', 'MASTERCARD', 'AMEX']
+
+      - name: card_status
+        description: Current card status.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['ACTIVE', 'BLOCKED', 'EXPIRED', 'CANCELLED']
+
+      - name: issued_date
+        description: Card issue date.
+        data_tests:
+          - not_null
+
+      - name: expiry_date
+        description: Card expiry date.
+        data_tests:
+          - not_null
+
+      - name: credit_limit
+        description: Card credit limit.
+
+      - name: card_is_active
+        description: Boolean flag showing whether the card is active.
+        data_tests:
+          - not_null
+
+      - name: created_at
+        description: Raw record creation timestamp.
+
+      - name: dbt_loaded_at
+        description: Timestamp when dbt loaded the model.
+
+  - name: dim_merchants
+    description: Merchant dimension table with one row per merchant.
+    columns:
+      - name: merchant_id
+        description: Unique merchant identifier.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: merchant_name
+        description: Merchant name.
+        data_tests:
+          - not_null
+
+      - name: merchant_category
+        description: Merchant business category.
+        data_tests:
+          - not_null
+
+      - name: merchant_country
+        description: Merchant country.
+        data_tests:
+          - not_null
+
+      - name: merchant_city
+        description: Merchant city.
+        data_tests:
+          - not_null
+
+      - name: onboarding_date
+        description: Merchant onboarding date.
+        data_tests:
+          - not_null
+
+      - name: merchant_status
+        description: Current merchant status.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['ACTIVE', 'INACTIVE', 'UNDER REVIEW', 'SUSPENDED']
+
+      - name: merchant_is_active
+        description: Boolean flag showing whether the merchant is active.
+        data_tests:
+          - not_null
+
+      - name: created_at
+        description: Raw record creation timestamp.
+
+      - name: dbt_loaded_at
+        description: Timestamp when dbt loaded the model.
+
+  - name: fact_transactions
+    description: Transaction fact table with one row per transaction.
+    columns:
+      - name: transaction_id
+        description: Unique transaction identifier.
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_id
+        description: Foreign key to dim_customers.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
+
+      - name: account_id
+        description: Foreign key to dim_accounts.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_accounts')
+                field: account_id
+
+      - name: card_id
+        description: Foreign key to dim_cards.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_cards')
+                field: card_id
+
+      - name: merchant_id
+        description: Foreign key to dim_merchants.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_merchants')
+                field: merchant_id
+
+      - name: transaction_timestamp
+        description: Timestamp when the transaction occurred.
+
+      - name: transaction_date
+        description: Date when the transaction occurred.
+        data_tests:
+          - not_null
+
+      - name: transaction_month
+        description: Month when the transaction occurred.
+        data_tests:
+          - not_null
+
+      - name: transaction_type
+        description: Transaction type.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['PURCHASE', 'WITHDRAWAL', 'DEPOSIT', 'TRANSFER', 'REFUND']
+
+      - name: transaction_status
+        description: Transaction status.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['SUCCESS', 'FAILED', 'PENDING']
+
+      - name: channel
+        description: Transaction channel.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['POS', 'WEB', 'MOBILE APP', 'ATM']
+
+      - name: failure_reason
+        description: Failure reason for failed transactions.
+
+      - name: transaction_amount
+        description: Transaction amount in original currency.
+        data_tests:
+          - not_null
+
+      - name: transaction_currency
+        description: Original transaction currency.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['SGD', 'USD', 'MYR', 'VND', 'INR']
+
+      - name: fee_amount
+        description: Fee amount in original currency.
+        data_tests:
+          - not_null
+
+      - name: account_currency
+        description: Account currency from the account dimension.
+        data_tests:
+          - not_null
+
+      - name: signed_transaction_amount
+        description: Signed cashflow amount where outflows are negative and inflows are positive.
+        data_tests:
+          - not_null
+
+      - name: transaction_amount_sgd
+        description: Transaction amount converted to SGD.
+        data_tests:
+          - not_null
+
+      - name: fee_amount_sgd
+        description: Fee amount converted to SGD.
+        data_tests:
+          - not_null
+
+      - name: is_successful
+        description: Boolean flag for successful transactions.
+        data_tests:
+          - not_null
+
+      - name: is_failed
+        description: Boolean flag for failed transactions.
+        data_tests:
+          - not_null
+
+      - name: is_pending
+        description: Boolean flag for pending transactions.
+        data_tests:
+          - not_null
+
+      - name: is_cross_border
+        description: Boolean flag for cross-border transactions.
+        data_tests:
+          - not_null
+
+      - name: created_at
+        description: Raw record creation timestamp.
+
+      - name: dbt_loaded_at
+        description: Timestamp when dbt loaded the model.
+
+  - name: fct_daily_transaction_summary
+    description: Daily transaction summary table for BI dashboard monitoring.
+    columns:
+      - name: transaction_date
+        description: Transaction date.
+        data_tests:
+          - not_null
+
+      - name: transaction_currency
+        description: Transaction currency.
+        data_tests:
+          - not_null
+
+      - name: channel
+        description: Transaction channel.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['POS', 'WEB', 'MOBILE APP', 'ATM']
+
+      - name: transaction_status
+        description: Transaction status.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['SUCCESS', 'FAILED', 'PENDING']
+
+      - name: transaction_count
+        description: Number of transactions.
+
+      - name: successful_transaction_count
+        description: Number of successful transactions.
+
+      - name: failed_transaction_count
+        description: Number of failed transactions.
+
+      - name: pending_transaction_count
+        description: Number of pending transactions.
+
+      - name: total_transaction_amount
+        description: Total transaction amount in original currency.
+
+      - name: total_transaction_amount_sgd
+        description: Total transaction amount converted to SGD.
+
+      - name: total_fee_amount
+        description: Total fee amount in original currency.
+
+      - name: total_fee_amount_sgd
+        description: Total fee amount converted to SGD.
+
+      - name: success_rate
+        description: Percentage of transactions that were successful.
+
+      - name: failed_rate
+        description: Percentage of transactions that failed.
+
+      - name: cross_border_transaction_count
+        description: Number of cross-border transactions.
+
+      - name: dbt_loaded_at
+        description: Timestamp when dbt loaded the model.
+
+  - name: fct_customer_transaction_summary
+    description: Customer-level transaction summary table for customer behavior analysis.
+    columns:
+      - name: customer_id
+        description: Unique customer identifier.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
+
+      - name: total_transactions
+        description: Total number of transactions by customer.
+
+      - name: successful_transactions
+        description: Number of successful transactions by customer.
+
+      - name: failed_transactions
+        description: Number of failed transactions by customer.
+
+      - name: pending_transactions
+        description: Number of pending transactions by customer.
+
+      - name: total_spend_sgd
+        description: Total transaction amount in SGD.
+
+      - name: total_fee_generated_sgd
+        description: Total successful fee amount generated in SGD.
+
+      - name: first_transaction_date
+        description: First transaction date for the customer.
+
+      - name: last_transaction_date
+        description: Most recent transaction date for the customer.
+
+      - name: active_transaction_days
+        description: Number of distinct transaction days.
+
+      - name: cross_border_transactions
+        description: Number of cross-border transactions.
+
+      - name: preferred_channel
+        description: Most frequently used transaction channel by customer.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['POS', 'WEB', 'MOBILE APP', 'ATM']
+
+      - name: most_used_transaction_type
+        description: Most frequently used transaction type by customer.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['PURCHASE', 'WITHDRAWAL', 'DEPOSIT', 'TRANSFER', 'REFUND']
+
+      - name: dbt_loaded_at
+        description: Timestamp when dbt loaded the model.
