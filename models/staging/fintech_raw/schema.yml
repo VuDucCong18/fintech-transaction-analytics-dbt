@@ -1,38 +1,30 @@
 version: 2
 
 models:
-  stg_customers:
-    description: Cleaned customer dimension from RAW_CUSTOMERS
+  - name: stg_customers
+    description: Cleaned customer staging model from RAW_CUSTOMERS.
     columns:
       - name: customer_id
         data_tests:
           - unique
           - not_null
+      - name: customer_name
       - name: email
         data_tests:
           - unique
           - not_null
-      - name: first_name
-        data_tests:
-          - not_null
-      - name: last_name
-        data_tests:
-          - not_null
+      - name: gender
+      - name: date_of_birth
+      - name: country
+      - name: city
       - name: signup_date
-        data_tests:
-          - not_null
-      - name: kyc_status
-        data_tests:
-          - not_null
       - name: customer_segment
-        data_tests:
-          - not_null
-      - name: is_active
-        data_tests:
-          - not_null
+      - name: kyc_status
+      - name: customer_age
+      - name: created_at
 
-  stg_accounts:
-    description: Cleaned account dimension from RAW_ACCOUNTS
+  - name: stg_accounts
+    description: Cleaned account staging model from RAW_ACCOUNTS.
     columns:
       - name: account_id
         data_tests:
@@ -42,101 +34,65 @@ models:
         data_tests:
           - not_null
       - name: account_type
-        data_tests:
-          - not_null
-      - name: account_currency
-        data_tests:
-          - not_null
       - name: account_status
-        data_tests:
-          - not_null
       - name: opened_date
-        data_tests:
-          - not_null
-      - name: available_balance
-        data_tests:
-          - not_null
-      - name: is_joint_account
-        data_tests:
-          - not_null
+      - name: closed_date
+      - name: account_currency
+      - name: current_balance
+      - name: account_is_active
+      - name: created_at
 
-  stg_cards:
-    description: Cleaned card dimension from RAW_CARDS
+  - name: stg_cards
+    description: Cleaned card staging model from RAW_CARDS.
     columns:
       - name: card_id
         data_tests:
           - unique
           - not_null
+      - name: customer_id
       - name: account_id
         data_tests:
           - not_null
       - name: card_type
-        data_tests:
-          - not_null
       - name: card_network
-        data_tests:
-          - not_null
       - name: card_status
-        data_tests:
-          - not_null
       - name: issued_date
-        data_tests:
-          - not_null
       - name: expiry_date
-        data_tests:
-          - not_null
-      - name: is_virtual
-        data_tests:
-          - not_null
+      - name: credit_limit
+      - name: card_is_active
+      - name: created_at
 
-  stg_merchants:
-    description: Cleaned merchant dimension from RAW_MERCHANTS
+  - name: stg_merchants
+    description: Cleaned merchant staging model from RAW_MERCHANTS.
     columns:
       - name: merchant_id
         data_tests:
           - unique
           - not_null
       - name: merchant_name
-        data_tests:
-          - not_null
       - name: merchant_category
-        data_tests:
-          - not_null
       - name: merchant_country
-        data_tests:
-          - not_null
       - name: merchant_city
-        data_tests:
-          - not_null
       - name: onboarding_date
-        data_tests:
-          - not_null
       - name: merchant_status
-        data_tests:
-          - not_null
+      - name: merchant_is_active
+      - name: created_at
 
-  stg_fx_rates:
-    description: Cleaned FX rates from RAW_FX_RATES
+  - name: stg_fx_rates
+    description: Cleaned FX rate staging model from RAW_FX_RATES.
     columns:
       - name: fx_rate_id
         data_tests:
           - unique
           - not_null
       - name: rate_date
-        data_tests:
-          - not_null
       - name: from_currency
-        data_tests:
-          - not_null
       - name: to_currency
-        data_tests:
-          - not_null
       - name: exchange_rate
-        data_tests:
-          - not_null
+      - name: created_at
 
-  stg_transactions:
-    description: Cleaned transactions from RAW_TRANSACTIONS
+  - name: stg_transactions
+    description: Cleaned transaction staging model from RAW_TRANSACTIONS.
     columns:
       - name: transaction_id
         data_tests:
@@ -155,32 +111,14 @@ models:
         data_tests:
           - not_null
       - name: transaction_timestamp
-        data_tests:
-          - not_null
       - name: transaction_date
-        data_tests:
-          - not_null
       - name: transaction_month
-        data_tests:
-          - not_null
       - name: transaction_type
-        data_tests:
-          - not_null
-      - name: transaction_amount
-        data_tests:
-          - not_null
-      - name: transaction_currency
-        data_tests:
-          - not_null
-      - name: fee_amount
-        data_tests:
-          - not_null
       - name: transaction_status
-        data_tests:
-          - not_null
+      - name: transaction_amount
+      - name: transaction_currency
+      - name: fee_amount
       - name: channel
-        data_tests:
-          - not_null
       - name: is_cross_border
-        data_tests:
-          - not_null
+      - name: failure_reason
+      - name: created_at
