@@ -52,8 +52,9 @@ sources:
             data_tests:
               - not_null
               - relationships:
-                  to: source('fintech_raw', 'RAW_CUSTOMERS')
-                  field: customer_id
+                  arguments:
+                    to: source('fintech_raw', 'RAW_CUSTOMERS')
+                    field: customer_id
           - name: account_type
             description: Type of account.
           - name: account_status
@@ -86,8 +87,9 @@ sources:
             data_tests:
               - not_null
               - relationships:
-                  to: source('fintech_raw', 'RAW_ACCOUNTS')
-                  field: account_id
+                  arguments:
+                    to: source('fintech_raw', 'RAW_ACCOUNTS')
+                    field: account_id
           - name: card_type
             description: Type of card.
           - name: card_network
