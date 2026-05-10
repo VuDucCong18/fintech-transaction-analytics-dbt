@@ -1,13 +1,29 @@
 import streamlit as st
 import pandas as pd
-from snowflake.snowpark.context import get_active_session
+from snowflake.snowpark import Session
 
 st.set_page_config(page_title="Fintech Analytics Dashboard", layout="wide")
 
-session = get_active_session()
-
 DB = "FINTECH_ANALYTICS"
 SCHEMA = "RAW_MARTS"
+
+MONTH_NAMES = {1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
+               7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"}
+
+
+@st.cache_resource
+def get_session():
+    return Session.builder.configs({
+        "account": st.secrets["snowflake"]["account"],
+        "user": st.secrets["snowflake"]["user"],
+        "password": st.secrets["snowflake"]["password"],
+        "warehouse": st.secrets["snowflake"]["warehouse"],
+        "database": st.secrets["snowflake"]["database"],
+        "schema": st.secrets["snowflake"]["schema"],
+    }).create()
+
+
+session = get_session()
 
 
 def format_metric(value, prefix="", suffix="", decimals=0):
@@ -32,10 +48,6 @@ def get_last_refresh():
     if ts is not None:
         return pd.Timestamp(ts).strftime("%Y-%m-%d %H:%M:%S UTC")
     return "Unknown"
-
-
-MONTH_NAMES = {1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
-               7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"}
 
 
 def render_header():
@@ -127,14 +139,10 @@ def executive_overview():
     with tab1:
         daily_agg = filtered_df.groupby("TRANSACTION_DATE").agg(
             TOTAL_TRANSACTION_AMOUNT_SGD=("TOTAL_TRANSACTION_AMOUNT_SGD", "sum"),
-            SUCCESS_NUM=("SUCCESSFUL_TRANSACTION_COUNT", "sum"),
-            TOTAL_NUM=("TRANSACTION_COUNT", "sum"),
-        ).reset_index().sort_values("TRANSACTION_DATE")
-        daily_agg["DAILY_SUCCESS_RATE"] = (daily_agg["SUCCESS_NUM"] / daily_agg["TOTAL_NUM"] * 100).round(2)
-        daily_agg = daily_agg.set_index("TRANSACTION_DATE")
+        ).reset_index().sort_values("TRANSACTION_DATE").set_index("TRANSACTION_DATE")
 
         st.subheader("Daily Transaction Volume (SGD)")
-        st.area_chart(daily_agg[["TOTAL_TRANSACTION_AMOUNT_SGD"]].rename(columns={"TOTAL_TRANSACTION_AMOUNT_SGD": "Volume (SGD)"}))
+        st.area_chart(daily_agg.rename(columns={"TOTAL_TRANSACTION_AMOUNT_SGD": "Volume (SGD)"}))
 
     with tab2:
         col3, col4 = st.columns(2)
@@ -177,10 +185,6 @@ def customer_intelligence():
     cust_df = load_data("DIM_CUSTOMERS")
     cust_txn_df = load_data("FCT_CUSTOMER_TRANSACTION_SUMMARY")
     merged_df = cust_txn_df.merge(cust_df, on="CUSTOMER_ID", how="left")
-
-    merged_df["FIRST_TRANSACTION_DATE"] = pd.to_datetime(merged_df["FIRST_TRANSACTION_DATE"])
-    merged_df["YEAR"] = merged_df["FIRST_TRANSACTION_DATE"].dt.year
-    merged_df["MONTH"] = merged_df["FIRST_TRANSACTION_DATE"].dt.month
 
     st.sidebar.subheader("Filters")
     segments = ["All"] + sorted(cust_df["CUSTOMER_SEGMENT"].dropna().unique().tolist())
@@ -371,7 +375,6 @@ def transaction_operations():
             st.bar_chart(reason_df, x="Failure Reason", y="Number of Failures")
         else:
             st.info("No failed transactions in current filter selection.")
-        
 
     with tab2:
         st.subheader("Transaction Status by Channel")
