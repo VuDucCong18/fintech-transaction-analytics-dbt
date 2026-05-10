@@ -2,8 +2,9 @@
 
 ## Author
 
-**Vu Duc Cong**
-Fresh graduate from Singapore Management University (SMU)
+I am **Vu Duc Cong**
+
+A fresh graduate from Singapore Management University (SMU)
 Bachelor of Science in Information Systems, with a second major in Data Science & Analytics
 
 I am a passionate data professional with strong interest in analytics engineering, business intelligence, and scalable data systems. This project was independently designed and built to demonstrate practical competence in:
@@ -257,7 +258,9 @@ With internship experience across startup, hypergrowth, and enterprise environme
 ## Contact
 
 **Vu Duc Cong**
+
 Singapore Management University
+
 Bachelor of Science (Information Systems + Data Science & Analytics)
 
 GitHub profile and project repository serve as demonstrations of my technical and analytical capability.
