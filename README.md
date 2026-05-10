@@ -183,6 +183,8 @@ All transactions are dynamically normalized into SGD using FX tables, with fallb
 
 **Interactive Streamlit dashboards** powered by Snowflake data, built to translate analytics into actionable business insights:
 
+**Dashboard URL: https://duccongvuanalytics.streamlit.app/**
+
 ### 1. Executive Overview
 Real-time financial performance dashboard for leadership decision-making:
 * **Key Metrics**: Total transactions, volume (SGD), fee revenue, success rates, cross-border trends
