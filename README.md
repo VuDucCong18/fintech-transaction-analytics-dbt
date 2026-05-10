@@ -179,6 +179,42 @@ All transactions are dynamically normalized into SGD using FX tables, with fallb
 
 ---
 
+## Dashboards & Visualization
+
+**Interactive Streamlit dashboards** powered by Snowflake data, built to translate analytics into actionable business insights:
+
+### 1. Executive Overview
+Real-time financial performance dashboard for leadership decision-making:
+* **Key Metrics**: Total transactions, volume (SGD), fee revenue, success rates, cross-border trends
+* **Temporal Analysis**: Daily trends, monthly summaries, year-over-year comparisons
+* **Composition Analysis**: Transaction status breakdown, channel performance, currency mix
+* **Filters**: Year, month, channel, currency for flexible drill-down analysis
+* **Use Case**: Executive dashboards, financial reporting, revenue tracking
+
+### 2. Customer Intelligence
+Deep-dive customer behavior and segmentation analytics:
+* **Key Metrics**: Total customers, average spend (SGD), transaction frequency, KYC verification rates, active days
+* **Customer Insights**: Segment distribution, top 10 high-value customers, segment profitability
+* **Cohort Analysis**: Customer activity by segment, cross-border usage patterns, spend distribution by geography
+* **Filters**: Customer segment, KYC status, country for targeted analysis
+* **Use Case**: Customer segmentation, lifetime value analysis, retention strategy, geographic expansion
+
+### 3. Transaction Operations
+Operational health & failure monitoring dashboard:
+* **Key Metrics**: Success/failure rates, pending transactions, cross-border failures, transaction volume
+* **Operational Monitoring**: Failure reason breakdown, monthly trend analysis, status by channel
+* **Transaction Detail**: Transaction type mix, channel performance matrix, failed transaction drill-down
+* **Filters**: Year, month, channel, transaction status for real-time monitoring
+* **Use Case**: Operations monitoring, fraud detection, SLA tracking, incident response
+
+### Technical Implementation
+* **Frontend**: Streamlit for interactive, responsive BI dashboards
+* **Data Source**: Snowflake (aggregated tables from dbt marts)
+* **Performance**: Caching strategy (TTL=600s) for optimized query performance
+* **Interactivity**: Multi-dimensional filtering, tabbed analysis views, responsive metric cards
+
+---
+
 ## Example Business Questions Supported
 
 ### Customer Analytics
