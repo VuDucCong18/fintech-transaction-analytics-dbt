@@ -131,7 +131,7 @@ def executive_overview():
     display_monthly["Volume (SGD)"] = display_monthly["Volume (SGD)"].apply(lambda x: f"${x:,.2f}")
     display_monthly["Fee Revenue (SGD)"] = display_monthly["Fee Revenue (SGD)"].apply(lambda x: f"${x:,.2f}")
     display_monthly["Success Rate (%)"] = display_monthly["Success Rate (%)"].apply(lambda x: f"{x:.2f}%")
-    st.dataframe(display_monthly, use_container_width=True, hide_index=True)
+    st.dataframe(display_monthly, width='stretch', hide_index=True)
 
     st.markdown("---")
     tab1, tab2, tab3 = st.tabs(["Trends", "Composition", "Geography"])
@@ -235,7 +235,7 @@ def customer_intelligence():
     display_seg["Total Spend (SGD)"] = display_seg["Total Spend (SGD)"].apply(lambda x: f"${x:,.2f}")
     display_seg["Avg Transactions"] = display_seg["Avg Transactions"].apply(lambda x: f"{x:.1f}")
     display_seg["KYC Verified Rate (%)"] = display_seg["KYC Verified Rate (%)"].apply(lambda x: f"{x:.2f}%")
-    st.dataframe(display_seg, use_container_width=True, hide_index=True)
+    st.dataframe(display_seg, width='stretch', hide_index=True)
 
     st.markdown("---")
     tab1, tab2, tab3 = st.tabs(["Segmentation", "Value Analysis", "Cohorts"])
