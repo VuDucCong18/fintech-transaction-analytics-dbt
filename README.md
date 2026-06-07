@@ -211,11 +211,6 @@ A reusable null-safe division macro in `macros/safe_divide.sql` wraps Snowflake'
 
 **Dashboard URL: https://duccongvuanalytics.streamlit.app/**
 
-> Screenshot — Executive Overview
-> *(replace this line with: ![Executive Overview](docs/executive_overview.png))*
-
-> Screenshot — Customer Intelligence
-> *(replace this line with: ![Customer Intelligence](docs/customer_intelligence.png))*
 
 ### 1. Executive Overview
 Real-time financial performance dashboard for leadership decision-making:
