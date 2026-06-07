@@ -60,6 +60,12 @@ The objective was to simulate how enterprise data teams design scalable transfor
 
 ---
 
+## Pipeline Architecture
+
+![dbt model lineage](docs/dag_lineage.svg)
+
+> **Naming convention:** `fct_` prefix is reserved for `FACT_TRANSACTIONS`, which holds one row per transaction event. Aggregate/summary tables use the `agg_` prefix to make the distinction explicit.
+
 ## Project Overview
 
 This is a production-style Analytics Engineering project that transforms raw fintech customer transaction data into BI-ready marts.
@@ -94,8 +100,8 @@ RAW → STAGING → MARTS
 
 #### Aggregate Tables
 
-* FCT_DAILY_TRANSACTION_SUMMARY
-* FCT_CUSTOMER_TRANSACTION_SUMMARY
+* AGG_DAILY_TRANSACTION_SUMMARY
+* AGG_CUSTOMER_TRANSACTION_SUMMARY
 
 ---
 
@@ -131,8 +137,8 @@ RAW → STAGING → MARTS
 │  │   └── FACT_TRANSACTIONS (Fact)       │
 │  │                                      │
 │  └── AGGREGATES                         │
-│      ├── FCT_DAILY_TRANSACTION_SUMMARY  │
-│      └── FCT_CUSTOMER_TRANSACTION_SUMMARY
+│      ├── AGG_DAILY_TRANSACTION_SUMMARY  │
+│      └── AGG_CUSTOMER_TRANSACTION_SUMMARY
 │                                         │
 └─────────────────────────────────────────┘
 ```
@@ -140,6 +146,19 @@ RAW → STAGING → MARTS
 ---
 
 ## Key Business Logic Implemented
+
+### Multi-Currency FX Conversion
+
+All transactions are normalised to SGD using daily FX rates, with a fallback
+to the most recent available rate when an exact daily rate is missing.
+The fallback uses a correlated subquery (max rate_date <= transaction_date),
+ensuring no transaction is left without a valid conversion rate.
+
+### safe_divide macro
+
+A reusable null-safe division macro (`macros/safe_divide.sql`) is used across aggregate models.
+It wraps Snowflake's `IFF` to return `NULL` instead of raising a division-by-zero error when
+the denominator is `0` or `NULL`. Usage: `{{ safe_divide('numerator_expr', 'denominator_expr') }}`.
 
 ### 1. Multi-Currency FX Conversion
 
@@ -184,6 +203,12 @@ All transactions are dynamically normalized into SGD using FX tables, with fallb
 **Interactive Streamlit dashboards** powered by Snowflake data, built to translate analytics into actionable business insights:
 
 **Dashboard URL: https://duccongvuanalytics.streamlit.app/**
+
+> Screenshot — Executive Overview
+> *(replace this line with: ![Executive Overview](docs/executive_overview.png))*
+
+> Screenshot — Customer Intelligence
+> *(replace this line with: ![Customer Intelligence](docs/customer_intelligence.png))*
 
 ### 1. Executive Overview
 Real-time financial performance dashboard for leadership decision-making:

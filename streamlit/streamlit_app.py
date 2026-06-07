@@ -40,6 +40,31 @@ def load_data(table_name):
 
 
 @st.cache_data(ttl=600)
+def load_failed_transactions(limit=200):
+    """
+    Targeted query for failed transaction drill-down.
+    Fetches only failed rows with selected columns to avoid loading the full
+    fact table into memory. For production scale, paginate further or
+    serve from a pre-aggregated failures table.
+    """
+    return session.sql(f"""
+        SELECT
+            TRANSACTION_ID,
+            CUSTOMER_ID,
+            TRANSACTION_DATE,
+            CHANNEL,
+            TRANSACTION_TYPE,
+            FAILURE_REASON,
+            TRANSACTION_AMOUNT_SGD,
+            IS_CROSS_BORDER
+        FROM {DB}.{SCHEMA}.FACT_TRANSACTIONS
+        WHERE IS_FAILED = TRUE
+        ORDER BY TRANSACTION_DATE DESC
+        LIMIT {limit}
+    """).to_pandas()
+
+
+@st.cache_data(ttl=600)
 def get_last_refresh():
     result = session.sql(
         f"SELECT MAX(DBT_LOADED_AT) AS LAST_REFRESH FROM {DB}.{SCHEMA}.FACT_TRANSACTIONS"
@@ -73,7 +98,7 @@ def executive_overview():
 | **Cross-Border Txns** | Transactions where source currency != account currency |
 """)
 
-    daily_df = load_data("FCT_DAILY_TRANSACTION_SUMMARY")
+    daily_df = load_data("AGG_DAILY_TRANSACTION_SUMMARY")
     daily_df["TRANSACTION_DATE"] = pd.to_datetime(daily_df["TRANSACTION_DATE"])
     daily_df["YEAR"] = daily_df["TRANSACTION_DATE"].dt.year
     daily_df["MONTH"] = daily_df["TRANSACTION_DATE"].dt.month
@@ -183,7 +208,7 @@ def customer_intelligence():
 """)
 
     cust_df = load_data("DIM_CUSTOMERS")
-    cust_txn_df = load_data("FCT_CUSTOMER_TRANSACTION_SUMMARY")
+    cust_txn_df = load_data("AGG_CUSTOMER_TRANSACTION_SUMMARY")
     merged_df = cust_txn_df.merge(cust_df, on="CUSTOMER_ID", how="left")
 
     st.sidebar.subheader("Filters")
@@ -253,6 +278,12 @@ def customer_intelligence():
             kyc_df.columns = ["KYC Status", "Number of Customers"]
             st.bar_chart(kyc_df, x="KYC Status", y="Number of Customers")
 
+        if "AGE_BAND" in cust_df.columns:
+            st.subheader("Age Band Distribution")
+            age_df = cust_df.groupby("AGE_BAND").size().reset_index(name="COUNT")
+            age_df.columns = ["Age Band", "Number of Customers"]
+            st.bar_chart(age_df, x="Age Band", y="Number of Customers")
+
         st.subheader("Preferred Channel Distribution")
         ch_df = merged_df.groupby("PREFERRED_CHANNEL").size().reset_index(name="COUNT")
         ch_df.columns = ["Preferred Channel", "Number of Customers"]
@@ -298,62 +329,55 @@ def transaction_operations():
 | **Success Rate** | Transactions with is_successful = TRUE / Total x 100 |
 | **Failure Rate** | Transactions with is_failed = TRUE / Total x 100 |
 | **Pending Txns** | Transactions with is_pending = TRUE |
-| **Cross-Border Failed** | Failed transactions where is_cross_border = TRUE |
+| **Cross-Border Failed** | Failed transactions where is_cross_border = TRUE (from targeted sample) |
 """)
 
-    txn_df = load_data("FACT_TRANSACTIONS")
-    daily_df = load_data("FCT_DAILY_TRANSACTION_SUMMARY")
-
-    txn_df["TRANSACTION_DATE"] = pd.to_datetime(txn_df["TRANSACTION_DATE"])
-    txn_df["YEAR"] = txn_df["TRANSACTION_DATE"].dt.year
-    txn_df["MONTH"] = txn_df["TRANSACTION_DATE"].dt.month
+    daily_df = load_data("AGG_DAILY_TRANSACTION_SUMMARY")
+    daily_df["TRANSACTION_DATE"] = pd.to_datetime(daily_df["TRANSACTION_DATE"])
+    daily_df["YEAR"] = daily_df["TRANSACTION_DATE"].dt.year
+    daily_df["MONTH"] = daily_df["TRANSACTION_DATE"].dt.month
 
     st.sidebar.subheader("Filters")
-    years = sorted(txn_df["YEAR"].unique().tolist())
+    years = sorted(daily_df["YEAR"].unique().tolist())
     selected_year = st.sidebar.selectbox("Year", ["All"] + [str(y) for y in years], key="to_year")
-    months_available = sorted(txn_df["MONTH"].unique().tolist())
+    months_available = sorted(daily_df["MONTH"].unique().tolist())
     month_options = ["All"] + [MONTH_NAMES[m] for m in months_available]
     selected_month = st.sidebar.selectbox("Month", month_options, key="to_month")
-    channels = ["All"] + sorted(txn_df["CHANNEL"].dropna().unique().tolist())
+    channels = ["All"] + sorted(daily_df["CHANNEL"].dropna().unique().tolist())
     selected_channel = st.sidebar.selectbox("Channel", channels, key="to_channel")
-    statuses = ["All"] + sorted(txn_df["TRANSACTION_STATUS"].dropna().unique().tolist())
+    statuses = ["All"] + sorted(daily_df["TRANSACTION_STATUS"].dropna().unique().tolist())
     selected_status = st.sidebar.selectbox("Status", statuses, key="to_status")
 
     if selected_year != "All":
-        txn_df = txn_df[txn_df["YEAR"] == int(selected_year)]
+        daily_df = daily_df[daily_df["YEAR"] == int(selected_year)]
     if selected_month != "All":
         month_num = [k for k, v in MONTH_NAMES.items() if v == selected_month][0]
-        txn_df = txn_df[txn_df["MONTH"] == month_num]
+        daily_df = daily_df[daily_df["MONTH"] == month_num]
     if selected_channel != "All":
-        txn_df = txn_df[txn_df["CHANNEL"] == selected_channel]
         daily_df = daily_df[daily_df["CHANNEL"] == selected_channel]
     if selected_status != "All":
-        txn_df = txn_df[txn_df["TRANSACTION_STATUS"] == selected_status]
         daily_df = daily_df[daily_df["TRANSACTION_STATUS"] == selected_status]
 
-    total = len(txn_df)
-    success_count = int(txn_df["IS_SUCCESSFUL"].astype(int).sum())
-    failed_count = int(txn_df["IS_FAILED"].astype(int).sum())
-    pending_count = int(txn_df["IS_PENDING"].astype(int).sum())
+    total = int(daily_df["TRANSACTION_COUNT"].sum())
+    success_count = int(daily_df["SUCCESSFUL_TRANSACTION_COUNT"].sum())
+    failed_count = int(daily_df["FAILED_TRANSACTION_COUNT"].sum())
+    pending_count = int(daily_df["PENDING_TRANSACTION_COUNT"].sum())
     success_rate = (success_count / total * 100) if total > 0 else 0
     failure_rate = (failed_count / total * 100) if total > 0 else 0
-    failed_df = txn_df[txn_df["IS_FAILED"] == True].copy()
-    cb_failed = int(failed_df[failed_df["IS_CROSS_BORDER"] == True].shape[0])
 
-    k1, k2, k3, k4, k5 = st.columns(5)
+    k1, k2, k3, k4 = st.columns(4)
     k1.metric("Success Rate", format_metric(success_rate, suffix="%", decimals=2))
     k2.metric("Failure Rate", format_metric(failure_rate, suffix="%", decimals=2))
     k3.metric("Pending Txns", format_metric(pending_count))
     k4.metric("Total Failed", format_metric(failed_count))
-    k5.metric("Cross-Border Failed", format_metric(cb_failed))
 
     st.markdown("---")
     st.subheader("Monthly Operations Summary")
-    monthly_ops = txn_df.groupby(["YEAR", "MONTH"]).agg(
-        TOTAL=("TRANSACTION_ID", "count"),
-        SUCCESS=("IS_SUCCESSFUL", lambda x: int(x.astype(int).sum())),
-        FAILED=("IS_FAILED", lambda x: int(x.astype(int).sum())),
-        PENDING=("IS_PENDING", lambda x: int(x.astype(int).sum())),
+    monthly_ops = daily_df.groupby(["YEAR", "MONTH"]).agg(
+        TOTAL=("TRANSACTION_COUNT", "sum"),
+        SUCCESS=("SUCCESSFUL_TRANSACTION_COUNT", "sum"),
+        FAILED=("FAILED_TRANSACTION_COUNT", "sum"),
+        PENDING=("PENDING_TRANSACTION_COUNT", "sum"),
     ).reset_index()
     monthly_ops["SUCCESS_RATE"] = (monthly_ops["SUCCESS"] / monthly_ops["TOTAL"] * 100).round(2)
     monthly_ops["FAILURE_RATE"] = (monthly_ops["FAILED"] / monthly_ops["TOTAL"] * 100).round(2)
@@ -369,6 +393,7 @@ def transaction_operations():
 
     with tab1:
         st.subheader("Failure Reason Breakdown")
+        failed_df = load_failed_transactions(limit=200)
         if len(failed_df) > 0:
             reason_df = failed_df.groupby("FAILURE_REASON").size().reset_index(name="COUNT")
             reason_df.columns = ["Failure Reason", "Number of Failures"]
@@ -378,26 +403,25 @@ def transaction_operations():
 
     with tab2:
         st.subheader("Transaction Status by Channel")
-        ch_status = txn_df.groupby(["CHANNEL", "TRANSACTION_STATUS"]).size().reset_index(name="COUNT")
+        ch_status = daily_df.groupby(["CHANNEL", "TRANSACTION_STATUS"]).agg(
+            COUNT=("TRANSACTION_COUNT", "sum")
+        ).reset_index()
         pivot_status = ch_status.pivot(index="CHANNEL", columns="TRANSACTION_STATUS", values="COUNT").fillna(0)
         st.bar_chart(pivot_status)
 
-        st.subheader("Transaction Type Breakdown")
-        type_df = txn_df.groupby("TRANSACTION_TYPE").size().reset_index(name="COUNT")
-        type_df.columns = ["Transaction Type", "Number of Transactions"]
-        st.bar_chart(type_df, x="Transaction Type", y="Number of Transactions")
-
-        st.subheader("Channel x Transaction Type")
-        heatmap_df = txn_df.groupby(["CHANNEL", "TRANSACTION_TYPE"]).size().reset_index(name="COUNT")
-        pivot_heat = heatmap_df.pivot(index="CHANNEL", columns="TRANSACTION_TYPE", values="COUNT").fillna(0).astype(int)
-        st.dataframe(pivot_heat, use_container_width=True)
+        st.subheader("Transaction Volume by Channel")
+        ch_vol = daily_df.groupby("CHANNEL")["TRANSACTION_COUNT"].sum().reset_index()
+        ch_vol.columns = ["Channel", "Number of Transactions"]
+        st.bar_chart(ch_vol, x="Channel", y="Number of Transactions")
 
     with tab3:
         st.subheader("Failed Transaction Details")
+        failed_df = load_failed_transactions(limit=200)
+        st.caption("Showing up to 200 most recent failed transactions — targeted query, not a full table scan.")
         if len(failed_df) > 0:
+            st.metric("Cross-Border Failed (in sample)", int(failed_df["IS_CROSS_BORDER"].astype(int).sum()))
             display_df = failed_df[["TRANSACTION_ID", "CUSTOMER_ID", "TRANSACTION_DATE", "CHANNEL",
                                     "TRANSACTION_TYPE", "FAILURE_REASON", "TRANSACTION_AMOUNT_SGD"]].copy()
-            display_df = display_df.sort_values("TRANSACTION_DATE", ascending=False).head(50)
             display_df["TRANSACTION_AMOUNT_SGD"] = display_df["TRANSACTION_AMOUNT_SGD"].apply(lambda x: f"${x:,.2f}")
             display_df.columns = ["Transaction ID", "Customer ID", "Date", "Channel", "Type", "Failure Reason", "Amount (SGD)"]
             st.dataframe(display_df, use_container_width=True, hide_index=True)

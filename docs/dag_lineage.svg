@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560" font-family="Arial, sans-serif" font-size="11">
+  <!-- Background -->
+  <rect width="900" height="560" fill="#f8f9fa" rx="8"/>
+
+  <!-- Title -->
+  <text x="450" y="30" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">dbt Model Lineage — Fintech Transaction Analytics</text>
+
+  <!-- ── LAYER LABELS ── -->
+  <text x="14" y="95"  font-size="10" fill="#666" transform="rotate(-90,14,95)">Layer 1</text>
+  <text x="14" y="185" font-size="10" fill="#666" transform="rotate(-90,14,185)">Layer 2</text>
+  <text x="14" y="300" font-size="10" fill="#666" transform="rotate(-90,14,300)">Layer 3</text>
+  <text x="14" y="415" font-size="10" fill="#666" transform="rotate(-90,14,415)">Layer 4</text>
+  <text x="14" y="500" font-size="10" fill="#666" transform="rotate(-90,14,500)">Layer 5</text>
+
+  <!-- ══════════════════════════════════════════════
+       LAYER 1 — RAW SOURCES  (blue)
+  ══════════════════════════════════════════════ -->
+  <g fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5">
+    <rect x="40"  y="55" width="120" height="36" rx="5"/>
+    <rect x="180" y="55" width="120" height="36" rx="5"/>
+    <rect x="320" y="55" width="120" height="36" rx="5"/>
+    <rect x="460" y="55" width="120" height="36" rx="5"/>
+    <rect x="600" y="55" width="120" height="36" rx="5"/>
+    <rect x="740" y="55" width="120" height="36" rx="5"/>
+  </g>
+  <g text-anchor="middle" fill="#1e40af" font-weight="bold">
+    <text x="100" y="77">RAW_CUSTOMERS</text>
+    <text x="240" y="77">RAW_ACCOUNTS</text>
+    <text x="380" y="77">RAW_CARDS</text>
+    <text x="520" y="77">RAW_MERCHANTS</text>
+    <text x="660" y="77">RAW_FX_RATES</text>
+    <text x="800" y="77">RAW_TRANSACTIONS</text>
+  </g>
+
+  <!-- ══════════════════════════════════════════════
+       LAYER 2 — STAGING  (green)
+  ══════════════════════════════════════════════ -->
+  <g fill="#dcfce7" stroke="#16a34a" stroke-width="1.5">
+    <rect x="40"  y="150" width="120" height="36" rx="5"/>
+    <rect x="180" y="150" width="120" height="36" rx="5"/>
+    <rect x="320" y="150" width="120" height="36" rx="5"/>
+    <rect x="460" y="150" width="120" height="36" rx="5"/>
+    <rect x="600" y="150" width="120" height="36" rx="5"/>
+    <rect x="740" y="150" width="120" height="36" rx="5"/>
+  </g>
+  <g text-anchor="middle" fill="#14532d" font-weight="bold">
+    <text x="100" y="172">STG_CUSTOMERS</text>
+    <text x="240" y="172">STG_ACCOUNTS</text>
+    <text x="380" y="172">STG_CARDS</text>
+    <text x="520" y="172">STG_MERCHANTS</text>
+    <text x="660" y="172">STG_FX_RATES</text>
+    <text x="800" y="172">STG_TRANSACTIONS</text>
+  </g>
+
+  <!-- RAW → STG arrows -->
+  <g stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue)">
+    <line x1="100" y1="91"  x2="100" y2="148"/>
+    <line x1="240" y1="91"  x2="240" y2="148"/>
+    <line x1="380" y1="91"  x2="380" y2="148"/>
+    <line x1="520" y1="91"  x2="520" y2="148"/>
+    <line x1="660" y1="91"  x2="660" y2="148"/>
+    <line x1="800" y1="91"  x2="800" y2="148"/>
+  </g>
+
+  <!-- ══════════════════════════════════════════════
+       LAYER 3 — DIMS + FACT  (yellow)
+  ══════════════════════════════════════════════ -->
+  <g fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5">
+    <rect x="40"  y="258" width="130" height="36" rx="5"/>
+    <rect x="190" y="258" width="130" height="36" rx="5"/>
+    <rect x="340" y="258" width="110" height="36" rx="5"/>
+    <rect x="465" y="258" width="130" height="36" rx="5"/>
+    <rect x="615" y="258" width="155" height="36" rx="5"/>
+  </g>
+  <g text-anchor="middle" fill="#713f12" font-weight="bold">
+    <text x="105"  y="280">DIM_CUSTOMERS</text>
+    <text x="255"  y="280">DIM_ACCOUNTS</text>
+    <text x="395"  y="280">DIM_CARDS</text>
+    <text x="530"  y="280">DIM_MERCHANTS</text>
+    <text x="692"  y="280">FACT_TRANSACTIONS</text>
+  </g>
+
+  <!-- STG → DIM / FACT arrows -->
+  <g stroke="#16a34a" stroke-width="1.5" fill="none" marker-end="url(#arrowGreen)">
+    <!-- STG_CUSTOMERS → DIM_CUSTOMERS -->
+    <line x1="100" y1="186" x2="100" y2="256"/>
+    <!-- STG_ACCOUNTS → DIM_ACCOUNTS -->
+    <line x1="240" y1="186" x2="255" y2="256"/>
+    <!-- STG_CARDS → DIM_CARDS -->
+    <line x1="380" y1="186" x2="395" y2="256"/>
+    <!-- STG_MERCHANTS → DIM_MERCHANTS -->
+    <line x1="520" y1="186" x2="530" y2="256"/>
+    <!-- STG_TRANSACTIONS + STG_FX_RATES → FACT_TRANSACTIONS -->
+    <line x1="800" y1="186" x2="720" y2="256"/>
+    <line x1="660" y1="186" x2="680" y2="256"/>
+    <!-- DIMs → FACT (dimension keys join) -->
+    <line x1="170" y1="276" x2="615" y2="280"/>
+    <line x1="320" y1="276" x2="617" y2="281"/>
+    <line x1="450" y1="276" x2="618" y2="282"/>
+    <line x1="595" y1="276" x2="619" y2="283"/>
+  </g>
+
+  <!-- ══════════════════════════════════════════════
+       LAYER 4 — AGGREGATES  (orange/red)
+  ══════════════════════════════════════════════ -->
+  <g fill="#ffedd5" stroke="#ea580c" stroke-width="1.5">
+    <rect x="190" y="370" width="210" height="36" rx="5"/>
+    <rect x="490" y="370" width="220" height="36" rx="5"/>
+  </g>
+  <g text-anchor="middle" fill="#7c2d12" font-weight="bold">
+    <text x="295" y="392">AGG_DAILY_TXN_SUMMARY</text>
+    <text x="600" y="392">AGG_CUSTOMER_TXN_SUMMARY</text>
+  </g>
+
+  <!-- FACT → AGG arrows -->
+  <g stroke="#ca8a04" stroke-width="1.5" fill="none" marker-end="url(#arrowOrange)">
+    <line x1="660" y1="294" x2="380" y2="368"/>
+    <line x1="692" y1="294" x2="620" y2="368"/>
+  </g>
+
+  <!-- ══════════════════════════════════════════════
+       LAYER 5 — STREAMLIT DASHBOARD  (purple)
+  ══════════════════════════════════════════════ -->
+  <g fill="#ede9fe" stroke="#7c3aed" stroke-width="2">
+    <rect x="290" y="460" width="320" height="42" rx="8"/>
+  </g>
+  <text x="450" y="486" text-anchor="middle" fill="#4c1d95" font-weight="bold" font-size="13">Streamlit Dashboard</text>
+
+  <!-- AGG → Streamlit arrows -->
+  <g stroke="#ea580c" stroke-width="1.5" fill="none" marker-end="url(#arrowPurple)">
+    <line x1="295" y1="406" x2="400" y2="458"/>
+    <line x1="600" y1="406" x2="510" y2="458"/>
+  </g>
+
+  <!-- ══════════════════════════════════════════════
+       ARROWHEAD MARKERS
+  ══════════════════════════════════════════════ -->
+  <defs>
+    <marker id="arrowBlue"   markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrowGreen"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#16a34a"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#ca8a04"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#ea580c"/>
+    </marker>
+  </defs>
+
+  <!-- ══════════════════════════════════════════════
+       LEGEND
+  ══════════════════════════════════════════════ -->
+  <rect x="30" y="510" width="840" height="40" rx="5" fill="white" stroke="#d1d5db" stroke-width="1"/>
+  <g font-size="10" fill="#333">
+    <rect x="45"  y="524" width="14" height="14" fill="#dbeafe" stroke="#3b82f6" stroke-width="1" rx="2"/>
+    <text x="64"  y="535">Raw Sources</text>
+    <rect x="150" y="524" width="14" height="14" fill="#dcfce7" stroke="#16a34a" stroke-width="1" rx="2"/>
+    <text x="169" y="535">Staging Views</text>
+    <rect x="270" y="524" width="14" height="14" fill="#fef9c3" stroke="#ca8a04" stroke-width="1" rx="2"/>
+    <text x="289" y="535">Dims + Fact (Tables)</text>
+    <rect x="415" y="524" width="14" height="14" fill="#ffedd5" stroke="#ea580c" stroke-width="1" rx="2"/>
+    <text x="434" y="535">Aggregate Tables</text>
+    <rect x="555" y="524" width="14" height="14" fill="#ede9fe" stroke="#7c3aed" stroke-width="1" rx="2"/>
+    <text x="574" y="535">Streamlit Dashboard</text>
+  </g>
+</svg>
