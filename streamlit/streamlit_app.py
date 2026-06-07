@@ -133,10 +133,12 @@ def executive_overview():
     cross_border_count = int(filtered_df["CROSS_BORDER_TRANSACTION_COUNT"].sum())
     success_rate = (success_count / total_txns * 100) if total_txns > 0 else 0
 
-    k1, k2, k3, k4, k5, k6 = st.columns(6)
+    k1, k2, k3 = st.columns(3)
     k1.metric("Total Transactions", format_metric(total_txns))
     k2.metric("Volume (SGD)", format_metric(total_amount_sgd, prefix="$", decimals=2))
     k3.metric("Fee Revenue (SGD)", format_metric(total_fee_sgd, prefix="$", decimals=2))
+
+    k4, k5, k6 = st.columns(3)
     k4.metric("Success Rate", format_metric(success_rate, suffix="%", decimals=2))
     k5.metric("Failed Transactions", format_metric(failed_count))
     k6.metric("Cross-Border Txns", format_metric(cross_border_count))
