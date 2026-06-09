@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 from snowflake.snowpark import Session
+from cryptography.hazmat.primitives.serialization import (
+    load_pem_private_key, Encoding, PrivateFormat, NoEncryption
+)
 
 st.set_page_config(page_title="Fintech Analytics Dashboard", layout="wide")
 
@@ -13,13 +16,23 @@ MONTH_NAMES = {1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
 
 @st.cache_resource
 def get_session():
+    # Key-pair auth bypasses Snowflake's MFA requirement for programmatic connections.
+    # The private key is stored as a PEM string in Streamlit secrets and converted
+    # to DER bytes, which the Snowflake connector accepts directly.
+    pem_bytes = st.secrets["snowflake"]["private_key"].encode()
+    private_key = load_pem_private_key(pem_bytes, password=None)
+    private_key_der = private_key.private_bytes(
+        encoding=Encoding.DER,
+        format=PrivateFormat.PKCS8,
+        encryption_algorithm=NoEncryption(),
+    )
     return Session.builder.configs({
-        "account": st.secrets["snowflake"]["account"],
-        "user": st.secrets["snowflake"]["user"],
-        "password": st.secrets["snowflake"]["password"],
-        "warehouse": st.secrets["snowflake"]["warehouse"],
-        "database": st.secrets["snowflake"]["database"],
-        "schema": st.secrets["snowflake"]["schema"],
+        "account":     st.secrets["snowflake"]["account"],
+        "user":        st.secrets["snowflake"]["user"],
+        "private_key": private_key_der,
+        "warehouse":   st.secrets["snowflake"]["warehouse"],
+        "database":    st.secrets["snowflake"]["database"],
+        "schema":      st.secrets["snowflake"]["schema"],
     }).create()
 
 
